@@ -1,8 +1,10 @@
 package main
 
-import "testing"
+import (
+	"testing"
+)
 
-func TestDbConfig_GetDsn(t *testing.T) {
+func TestDbConfig_Dsn(t *testing.T) {
 	tests := []struct {
 		name string
 		hdb  DbConfig
@@ -12,7 +14,7 @@ func TestDbConfig_GetDsn(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.hdb.GetDsn(); got != tt.want {
+			if got := tt.hdb.Dsn(); got != tt.want {
 				t.Errorf("DbConfig.GetDsn() = %v, want %v", got, tt.want)
 			}
 		})

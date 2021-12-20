@@ -1,7 +1,12 @@
 package main
 
-import "log"
+import (
+	"log"
+
+	_ "github.com/SAP/go-hdb/driver"
+)
 
 func main() {
 	log.Printf("HanaCleanCentral initalising")
+
 }
