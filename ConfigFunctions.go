@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 )
@@ -17,8 +18,8 @@ func GetConfigFromFile(path string) (Config, error) {
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&cnf)
 	if err != nil {
-		log.Panicf("Failed to decode!")
-		return cnf, err
+		log.Printf("Failed to decode!")
+		return cnf, fmt.Errorf("failed to decode")
 	}
 
 	return cnf, nil
