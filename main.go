@@ -7,10 +7,16 @@ import (
 )
 
 func main() {
-	log.Printf("HanaCleanCentral initalising")
+
+	ac := ProcessFlags()
+
+	log.Printf("HanaCleanCentral initalising\n")
+	log.Printf("Configuration file = %s\n", ac.ConfigFile)
+	log.Printf("Verbose mode = %t\n", ac.Verbose)
+	log.Printf("Drymode mode = %t\n", ac.DryRun)
 	log.Printf("Getting Config")
 
-	cnf, err := GetConfigFromFile("testfiles/configtest01.json")
+	cnf, err := GetConfigFromFile(ac.ConfigFile)
 	if err != nil {
 		log.Fatal(err)
 	}
