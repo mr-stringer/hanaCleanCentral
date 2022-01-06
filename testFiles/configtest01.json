@@ -1,7 +1,7 @@
 {
     "Databases":[
         {
-            "Name": "Test",
+            "Name": "systemdb@TST",
             "Hostname": "hanadb.mydomain.int",
             "Port": 30015,
             "Username": "sstringer",

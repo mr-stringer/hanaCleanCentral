@@ -15,7 +15,7 @@ func TestGetConfigFromFile(t *testing.T) {
 		want    Config
 		wantErr bool
 	}{
-		{"GoodFile01", args{"testfiles/configtest01.json"}, Config{[]DbConfig{{"Test", "hanadb.mydomain.int", 30015, "sstringer", "ReallzyKoolPassw0rd", 14}}}, false},
+		{"GoodFile01", args{"testfiles/configtest01.json"}, Config{[]DbConfig{{"systemdb@TST", "hanadb.mydomain.int", 30015, "sstringer", "ReallzyKoolPassw0rd", 14}}}, false},
 		{"GoodFile02", args{"testfiles/configtest02.json"}, Config{[]DbConfig{{"Test", "hanadb.mydomain.int", 30015, "sstringer", "ReallzyKoolPassw0rd", 14}, {"Prod", "localhost", 30040, "sstringer", "ZeroPasswordsRGUD", 14}}}, false},
 		{"InvalidJson", args{"testfiles/invalidJson.json"}, Config{}, true},
 		{"InvalidPAth", args{"testfiles/NOFILE.json"}, Config{}, true},

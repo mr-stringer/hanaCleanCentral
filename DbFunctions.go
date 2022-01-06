@@ -12,7 +12,6 @@ func HanaVersion(hdb *sql.DB) (string, error) {
 	r1 := hdb.QueryRow(QUERY_GetVersion)
 	err := r1.Scan(&version)
 	if err != nil {
-		log.Print("THROWING ERROR")
 		return "", err // allow calling function to handle the error
 	}
 

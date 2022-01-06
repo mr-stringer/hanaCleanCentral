@@ -9,10 +9,10 @@ import (
 type DbConfig struct {
 	Name               string
 	Hostname           string
-	Port               uint16
+	Port               uint
 	Username           string
 	Password           string
-	TraceRetentionDays uint16
+	TraceRetentionDays uint
 }
 
 func (hdb DbConfig) Dsn() string {
