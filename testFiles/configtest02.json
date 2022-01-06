@@ -1,0 +1,20 @@
+{
+    "Databases":[
+        {
+            "Name": "Test",
+            "Hostname": "hanadb.mydomain.int",
+            "Port": 30015,
+            "Username": "sstringer",
+            "Password": "ReallzyKoolPassw0rd",
+            "TraceRetentionDays": 14
+        },
+        {
+            "Name": "Prod",
+            "Hostname": "localhost",
+            "Port": 30040,
+            "Username": "sstringer",
+            "Password": "ZeroPasswordsRGUD",
+            "TraceRetentionDays": 14
+        }
+    ]
+}
