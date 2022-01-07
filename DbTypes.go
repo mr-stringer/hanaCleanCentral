@@ -8,3 +8,9 @@ type TraceFile struct {
 	SizeBytes    uint64
 	LastModified string
 }
+
+type BackupFiles struct {
+	EntryType string
+	FileCount uint
+	Bytes     uint64
+}

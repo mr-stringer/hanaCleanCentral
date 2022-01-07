@@ -6,3 +6,10 @@ hanaCleanCentral is based on [hanacleaner](https://github.com/chriselswede/hanac
 
 Due to the way that tracefiles are deleted, we need to go into each system and tenant DB individually.  This has the advantage that each tenant can have individual settings, meaning that, for example, two tenant DBs on a single SID could have different tracefile retention periods and so on.
 
+## Required Privs
+
+|Application area |Type | Value |
+|---|---|---|
+|General|Role|`MANAGEMENT`|
+|TraceFile management |Privilege|`TRACE ADMIN`|
+|Backup catalog management|Privilege|`BACKUP OPERATOR`|

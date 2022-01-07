@@ -7,12 +7,16 @@ import (
 
 //Struct for holding database configuration
 type DbConfig struct {
-	Name               string
-	Hostname           string
-	Port               uint
-	Username           string
-	Password           string
-	TraceRetentionDays uint
+	Name                       string
+	Hostname                   string
+	Port                       uint
+	Username                   string
+	Password                   string
+	RemoveTraces               bool
+	TraceRetentionDays         uint
+	TruncateBackupCatalog      bool
+	BackupCatalogRetentionDays uint
+	DeleteOldBackups           bool
 }
 
 func (hdb DbConfig) Dsn() string {

@@ -6,7 +6,11 @@
             "Port": 30015,
             "Username": "sstringer",
             "Password": "ReallzyKoolPassw0rd",
-            "TraceRetentionDays": 14
+            "RemoveTraces": true,
+            "TraceRetentionDays": 14,
+            "TruncateBackupCatalog": false,
+            "BackupCatalogRetentionDays": 0,
+            "DeleteOldBackups": false
         }
     ]
 }
