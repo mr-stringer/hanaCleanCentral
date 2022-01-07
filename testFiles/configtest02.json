@@ -6,7 +6,11 @@
             "Port": 30015,
             "Username": "sstringer",
             "Password": "ReallzyKoolPassw0rd",
-            "TraceRetentionDays": 14
+            "RemoveTraces": true,
+            "TraceRetentionDays": 14,
+            "TruncateBackupCatalog": false,
+            "BackupCatalogRetentionDays": 0,
+            "DeleteOldBackups": false
         },
         {
             "Name": "Prod",
@@ -14,7 +18,11 @@
             "Port": 30040,
             "Username": "sstringer",
             "Password": "ZeroPasswordsRGUD",
-            "TraceRetentionDays": 14
+            "RemoveTraces": true,
+            "TraceRetentionDays": 14,
+            "TruncateBackupCatalog": true,
+            "BackupCatalogRetentionDays": 60,
+            "DeleteOldBackups": false
         }
     ]
 }

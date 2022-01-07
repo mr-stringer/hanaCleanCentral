@@ -24,6 +24,7 @@ func main() {
 
 	//basic ranging over DBs found
 	for _, dbc := range cnf.Databases {
+
 		db, err := dbc.NewDb()
 		if err != nil {
 			log.Printf("%s:Could not connect to configured database\n", dbc.Name)
@@ -44,7 +45,7 @@ func main() {
 		log.Printf("%s:Hana Version found %s\n", dbc.Name, v)
 		log.Printf("%s:Finished tasks", dbc.Name)
 
-		err = TruncateTraceFiles(db, dbc.TraceRetentionDays)
+		err = TruncateTraceFiles(ac, dbc.Name, db, dbc.TraceRetentionDays)
 		if err != nil {
 			log.Printf("%s:Error occured whilst trying to remove old tracesfiles", dbc.Name)
 			log.Printf("%s:Full error message:", dbc.Name)
@@ -52,6 +53,10 @@ func main() {
 			log.Printf("%s:Will not process any tasks for this databases\n", dbc.Name)
 			continue
 		}
-	}
 
+		err = TruncateBackupCatalog(ac, dbc.Name, db, dbc.BackupCatalogRetentionDays, dbc.DeleteOldBackups)
+		if err != nil {
+			log.Printf("%s:Backup catalog truncation failed", dbc.Name)
+		}
+	}
 }
