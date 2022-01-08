@@ -23,24 +23,21 @@ func HanaVersion(hdb *sql.DB) (string, error) {
 //specified in the 'TrncDaysOlder' argument.  The function will log all activity.  The function will also return
 //an error.  If no errors are found nil is returned.
 //In some cases it may not be possible to remove a trace file, these incidents are logged but will not cause the function to error.
-func TruncateTraceFiles(ac AppConfig, name string, hdb *sql.DB, TrncDaysOlder uint) error {
-	if ac.Verbose {
-		log.Printf("%s:Attempting tracefile truncation\n", name)
-	}
+func TruncateTraceFiles(lc chan<- LogMessage, name string, hdb *sql.DB, TrncDaysOlder uint) error {
+	lc <- LogMessage{name, "Attempting tracefile truncation", true}
 
 	if TrncDaysOlder == 0 {
-		log.Printf("%s:TrncDaysOlder is set to zero, nothing to do", name)
+		lc <- LogMessage{name, "TrncDaysOlder is set to zero, nothing to do", false}
 		return nil
 	}
 
-	/*slice to hold results*/
+	/*slilc <- LogMessage{name, "Attempting tracefile truncation", true}
+	ce to hold results*/
 	TraceFiles := make([]TraceFile, 0)
 
 	/*Get the list of candidate tracefiles where the M time days is greater than the TrncDaysOlder arguments*/
 	//fmt.Printf("%s", GetTraceFileQuery(TrncDaysOlder))
-	if ac.Verbose {
-		fmt.Printf("%s:Attempting Query'%s'\n", name, GetTraceFileQuery(TrncDaysOlder))
-	}
+	lc <- LogMessage{name, fmt.Sprintf("Attempting Query:'%s'\n", GetTraceFileQuery(TrncDaysOlder)), true}
 
 	rows, err := hdb.Query(GetTraceFileQuery(TrncDaysOlder))
 	if err != nil {
@@ -60,7 +57,7 @@ func TruncateTraceFiles(ac AppConfig, name string, hdb *sql.DB, TrncDaysOlder ui
 	}
 
 	if len(TraceFiles) == 0 {
-		log.Printf("%s:No tracefiles meet criteria for removal\n", name)
+		lc <- LogMessage{name, "No tracefiles meet criteria for removal", false}
 		return nil
 	}
 
@@ -68,9 +65,8 @@ func TruncateTraceFiles(ac AppConfig, name string, hdb *sql.DB, TrncDaysOlder ui
 	var saved uint64 = 0
 	/*Try and remove the files one by one to increase clarity in the logs*/
 	for _, v := range TraceFiles {
-		if ac.Verbose {
-			fmt.Printf("%s:Attempting Query'%s'\n", name, GetRemoveTrace(v.Hostname, v.TraceFile))
-		}
+
+		lc <- LogMessage{name, fmt.Sprintf("Attempting Query'%s'\n", GetRemoveTrace(v.Hostname, v.TraceFile)), true}
 		/*do nothing destructive if dryrun enabled*/
 		if !ac.DryRun {
 			_, err := hdb.Exec(GetRemoveTrace(v.Hostname, v.TraceFile))
