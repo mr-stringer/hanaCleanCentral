@@ -10,7 +10,9 @@
             "TraceRetentionDays": 14,
             "TruncateBackupCatalog": false,
             "BackupCatalogRetentionDays": 0,
-            "DeleteOldBackups": false
+            "DeleteOldBackups": false,
+            "ClearAlerts": true,
+            "AlertsOlderDeleteDays": 30
         },
         {
             "Name": "Prod",
@@ -22,7 +24,9 @@
             "TraceRetentionDays": 14,
             "TruncateBackupCatalog": true,
             "BackupCatalogRetentionDays": 60,
-            "DeleteOldBackups": false
+            "DeleteOldBackups": false,
+            "ClearAlerts": true,
+            "AlertsOlderDeleteDays": 30
         }
     ]
 }

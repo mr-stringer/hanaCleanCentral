@@ -168,3 +168,42 @@ func TruncateBackupCatalog(lc chan<- LogMessage, name string, hdb *sql.DB, TrncD
 	}
 	return nil
 }
+
+//This function deletes alerts from the table _SYS_STATISTICS.STATISTICS_ALERTS_BASE.  Alerts are deleted if they are older than
+//the given number of days in the DeleteOlderDays argument.  No changes are made to the database if the dryrun argument is set to true
+func ClearAlert(lc chan<- LogMessage, name string, hdb *sql.DB, DeleteOlderDays uint, dryrun bool) error {
+	lc <- LogMessage{name, "Attempting to Clear Alerts", true}
+
+	/*Find how many alerts there are that match the deltion criteria*/
+	var ac uint
+	lc <- LogMessage{name, "Attempting query", true}
+	lc <- LogMessage{name, GetAlertCount(DeleteOlderDays), true}
+	err := hdb.QueryRow(GetAlertCount(DeleteOlderDays)).Scan(&ac)
+	switch {
+	case err == sql.ErrNoRows:
+		lc <- LogMessage{name, "DB failed to count rows", false}
+		return err
+	case err != nil:
+		lc <- LogMessage{name, "DB failed to query failed", false}
+		return err
+	default:
+		lc <- LogMessage{name, fmt.Sprintf("Found %d alerts to delete ", ac), false}
+	}
+
+	if ac == 0 {
+		lc <- LogMessage{name, "Nothing to delete", false}
+		return nil
+	}
+
+	/*Attempt to delete the records*/
+	if !dryrun {
+		_, err = hdb.Exec(GetAlertDelete(DeleteOlderDays))
+		if err != nil {
+			lc <- LogMessage{name, "Query to remove alerts failed", false}
+			lc <- LogMessage{name, err.Error(), false}
+			return err
+		}
+		lc <- LogMessage{name, fmt.Sprintf("Sucessfully deleted %d alerts", ac), false}
+	}
+	return nil
+}

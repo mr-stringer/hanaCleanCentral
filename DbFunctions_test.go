@@ -199,3 +199,53 @@ func TestTruncateBackupCatalog(t *testing.T) {
 		})
 	}
 }
+
+func TestClearAlert(t *testing.T) {
+	/*Mock DB*/
+	db1, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	if err != nil {
+		t.Errorf("an error '%s' was not expected when opening mock database connection", err)
+	}
+	defer db1.Close()
+
+	lc := make(chan LogMessage)
+	quit := make(chan bool)
+	go Logger(AppConfig{"file", false, false}, lc, quit)
+
+	type args struct {
+		lc              chan<- LogMessage
+		name            string
+		hdb             *sql.DB
+		DeleteOlderDays uint
+		dryrun          bool
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{"Good01", args{lc, "db@sid", db1, 14, false}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			/*Set up mocks for test table*/
+			if tt.name == "Good01" {
+				rows1 := sqlmock.NewRows([]string{"COUNT"}).AddRow("250")
+				mock.ExpectQuery(GetAlertCount(tt.args.DeleteOlderDays)).WillReturnRows(rows1)
+				mock.ExpectExec(GetAlertDelete(tt.args.DeleteOlderDays)).WillReturnResult(sqlmock.NewResult(1, 1))
+			}
+
+			//	var backupID string = "12345678890"
+			//rows1 := sqlmock.NewRows([]string{"BACKUP_ID"}).AddRow(backupID)
+			//rows2 := sqlmock.NewRows([]string{"ENTRY", "COUNT", "BYTES"}).AddRow("complete data backup", 10, 100000000).AddRow("log backup", 100, 100000000)
+			//mock.ExpectQuery(GetLatestFullBackupID(tt.args.TrncDaysOlder)).WillReturnRows(rows1)
+			//mock.ExpectQuery(GetBackupFileData(backupID)).WillReturnRows(rows2)
+			//mock.ExpectExec(GetBackupDeleteComplete(backupID)).WillReturnError(fmt.Errorf("Some DB error"))
+			//
+			if err := ClearAlert(tt.args.lc, tt.args.name, tt.args.hdb, tt.args.DeleteOlderDays, tt.args.dryrun); (err != nil) != tt.wantErr {
+				t.Errorf("ClearAlert() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
