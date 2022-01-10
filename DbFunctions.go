@@ -37,7 +37,7 @@ func TruncateTraceFiles(lc chan<- LogMessage, name string, hdb *sql.DB, TrncDays
 
 	/*Get the list of candidate tracefiles where the M time days is greater than the TrncDaysOlder arguments*/
 	//fmt.Printf("%s", GetTraceFileQuery(TrncDaysOlder))
-	lc <- LogMessage{name, fmt.Sprintf("Attempting Query:'%s'\n", GetTraceFileQuery(TrncDaysOlder)), true}
+	lc <- LogMessage{name, fmt.Sprintf("Attempting Query:'%s'", GetTraceFileQuery(TrncDaysOlder)), true}
 
 	rows, err := hdb.Query(GetTraceFileQuery(TrncDaysOlder))
 	if err != nil {
@@ -66,12 +66,12 @@ func TruncateTraceFiles(lc chan<- LogMessage, name string, hdb *sql.DB, TrncDays
 	/*Try and remove the files one by one to increase clarity in the logs*/
 	for _, v := range TraceFiles {
 
-		lc <- LogMessage{name, fmt.Sprintf("Attempting Query'%s'\n", GetRemoveTrace(v.Hostname, v.TraceFile)), true}
+		lc <- LogMessage{name, fmt.Sprintf("Attempting Query'%s'", GetRemoveTrace(v.Hostname, v.TraceFile)), true}
 		/*do nothing destructive if dryrun enabled*/
 		if !dryrun {
 			_, err := hdb.Exec(GetRemoveTrace(v.Hostname, v.TraceFile))
 			if err != nil {
-				lc <- LogMessage{name, fmt.Sprintf("The tracefile '%s' on host '%s' could not be removed, it may be open!  This will be retried next time.\n", v.TraceFile, v.Hostname), false}
+				lc <- LogMessage{name, fmt.Sprintf("The tracefile '%s' on host '%s' could not be removed, it may be open!  This will be retried next time.", v.TraceFile, v.Hostname), false}
 				continue
 			}
 
@@ -108,7 +108,7 @@ func TruncateBackupCatalog(lc chan<- LogMessage, name string, hdb *sql.DB, TrncD
 		return fmt.Errorf("query error")
 
 	default:
-		lc <- LogMessage{name, fmt.Sprintf("Found recent backupID (%s) that meets the serach criteria\n", backupID), false}
+		lc <- LogMessage{name, fmt.Sprintf("Found recent backupID (%s) that meets the serach criteria", backupID), false}
 	}
 
 	/*Count how many backups will be deleted*/
@@ -132,7 +132,8 @@ func TruncateBackupCatalog(lc chan<- LogMessage, name string, hdb *sql.DB, TrncD
 	if len(bfs) == 0 {
 		/*Looks like we found a backup, but it is the oldest backup in the catalog so we have nothing to delete*/
 		/*bail out here gracefully*/
-		lc <- LogMessage{name, fmt.Sprintf("Nothing to delete older than %s\n", backupID), false}
+		lc <- LogMessage{name, fmt.Sprintf("Nothing to delete older than %s", backupID), false}
+
 		return nil
 	}
 
@@ -154,7 +155,7 @@ func TruncateBackupCatalog(lc chan<- LogMessage, name string, hdb *sql.DB, TrncD
 		query = GetBackupDelete(backupID)
 	}
 	lc <- LogMessage{name, fmt.Sprintf("Attempting query: %s", query), true}
-	log.Printf("%s:Attempting query %s\n", name, query)
+	log.Printf("%s:Attempting query %s", name, query)
 
 	if !dryrun {
 		_, err = hdb.Exec(query)
