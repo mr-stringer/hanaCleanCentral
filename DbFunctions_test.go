@@ -61,23 +61,28 @@ func TestTruncateTraceFiles(t *testing.T) {
 	}
 	defer db1.Close()
 
+	/*Create the log channel*/
+	lc := make(chan LogMessage)
+	go Logger(AppConfig{"file", false, false}, lc)
+
 	type args struct {
-		ac            AppConfig
+		lc            chan LogMessage
 		name          string
 		hdb           *sql.DB
 		TrncDaysOlder uint
+		DryRun        bool
 	}
 	tests := []struct {
 		name    string
 		args    args
 		wantErr bool
 	}{
-		{"Good01", args{AppConfig{"file", false, false}, "db@sid", db1, 28}, false},
-		{"Good02", args{AppConfig{"file", false, false}, "db@sid", db1, 7}, false},
-		{"Good03", args{AppConfig{"file", false, false}, "db@sid", db1, 365}, false},
-		{"Set to zero", args{AppConfig{"file", false, false}, "db@sid", db1, 0}, false},
-		{"Bad01 Trace Query Fails", args{AppConfig{"file", false, false}, "db@sid", db1, 28}, true},
-		{"Bad01 Trace Clear Fails", args{AppConfig{"file", false, false}, "db@sid", db1, 28}, false},
+		{"Good01", args{lc, "db@sid", db1, 28, false}, false},
+		{"Good02", args{lc, "db@sid", db1, 7, false}, false},
+		{"Good03", args{lc, "db@sid", db1, 365, false}, false},
+		{"Set to zero", args{lc, "db@sid", db1, 0, false}, false},
+		{"Bad01 Trace Query Fails", args{lc, "db@sid", db1, 28, false}, true},
+		{"Bad01 Trace Clear Fails", args{lc, "db@sid", db1, 28, false}, false},
 	}
 	for _, tt := range tests {
 
@@ -95,7 +100,7 @@ func TestTruncateTraceFiles(t *testing.T) {
 		}
 
 		t.Run(tt.name, func(t *testing.T) {
-			if err := TruncateTraceFiles(tt.args.ac, tt.args.name, tt.args.hdb, tt.args.TrncDaysOlder); (err != nil) != tt.wantErr {
+			if err := TruncateTraceFiles(tt.args.lc, tt.args.name, tt.args.hdb, tt.args.TrncDaysOlder, tt.args.DryRun); (err != nil) != tt.wantErr {
 				t.Errorf("TruncateTraceFiles() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -110,24 +115,30 @@ func TestTruncateBackupCatalog(t *testing.T) {
 	}
 	defer db1.Close()
 
+	lc := make(chan LogMessage)
+	go Logger(AppConfig{"file", false, false}, lc)
+
 	type args struct {
-		ac            AppConfig
+		lc            chan LogMessage
 		name          string
 		hdb           *sql.DB
 		TrncDaysOlder uint
 		delete        bool
+		dryrun        bool
 	}
 	tests := []struct {
 		name    string
 		args    args
 		wantErr bool
 	}{
-		{"Good01", args{AppConfig{"file", false, false}, "db@sid", db1, 28, false}, false},
-		{"Good02 Complete", args{AppConfig{"file", false, false}, "db@sid", db1, 28, true}, false},
-		{"Get ID Failed", args{AppConfig{"file", false, false}, "db@sid", db1, 28, true}, true},
-		{"Get Backup File Data Failed", args{AppConfig{"file", false, false}, "db@sid", db1, 28, true}, true},
-		{"Get Backup Delete Complete Failed", args{AppConfig{"file", false, false}, "db@sid", db1, 28, true}, true},
-		{"Get Backup Delete Failed", args{AppConfig{"file", false, false}, "db@sid", db1, 28, false}, true},
+		{"Good01", args{lc, "db@sid", db1, 28, false, false}, false},
+		{"Good02 Complete", args{lc, "db@sid", db1, 28, true, false}, false},
+		{"Get ID Failed", args{lc, "db@sid", db1, 28, true, false}, true},
+		{"Get ID No Rows", args{lc, "db@sid", db1, 28, true, false}, false},
+		{"Nothing to Delete", args{lc, "db@sid", db1, 28, true, false}, false},
+		{"Get Backup File Data Failed", args{lc, "db@sid", db1, 28, true, false}, true},
+		{"Get Backup Delete Complete Failed", args{lc, "db@sid", db1, 28, true, false}, true},
+		{"Get Backup Delete Failed", args{lc, "db@sid", db1, 28, false, false}, true},
 	}
 	for _, tt := range tests {
 
@@ -147,11 +158,20 @@ func TestTruncateBackupCatalog(t *testing.T) {
 			mock.ExpectExec(GetBackupDeleteComplete(backupID)).WillReturnResult(sqlmock.NewResult(1, 1))
 		} else if tt.name == "Get ID Failed" {
 			mock.ExpectQuery(GetLatestFullBackupID(tt.args.TrncDaysOlder)).WillReturnError(fmt.Errorf("Some DB error"))
+		} else if tt.name == "Get ID No Rows" {
+			mock.ExpectQuery(GetLatestFullBackupID(tt.args.TrncDaysOlder)).WillReturnError(sql.ErrNoRows)
 		} else if tt.name == "Get Backup File Data Failed" {
 			var backupID string = "12345678890"
 			rows1 := sqlmock.NewRows([]string{"BACKUP_ID"}).AddRow(backupID)
 			mock.ExpectQuery(GetLatestFullBackupID(tt.args.TrncDaysOlder)).WillReturnRows(rows1)
 			mock.ExpectQuery(GetBackupFileData(backupID)).WillReturnError(fmt.Errorf("Some DB error"))
+		} else if tt.name == "Nothing to Delete" {
+			var backupID string = "12345678890"
+			rows1 := sqlmock.NewRows([]string{"BACKUP_ID"}).AddRow(backupID)
+			rows2 := sqlmock.NewRows([]string{"ENTRY", "COUNT", "BYTES"})
+			mock.ExpectQuery(GetLatestFullBackupID(tt.args.TrncDaysOlder)).WillReturnRows(rows1)
+			mock.ExpectQuery(GetBackupFileData(backupID)).WillReturnRows(rows2)
+
 		} else if tt.name == "Get Backup Delete Complete Failed" {
 			var backupID string = "12345678890"
 			rows1 := sqlmock.NewRows([]string{"BACKUP_ID"}).AddRow(backupID)
@@ -171,7 +191,7 @@ func TestTruncateBackupCatalog(t *testing.T) {
 		}
 
 		t.Run(tt.name, func(t *testing.T) {
-			if err := TruncateBackupCatalog(tt.args.ac, tt.args.name, tt.args.hdb, tt.args.TrncDaysOlder, tt.args.delete); (err != nil) != tt.wantErr {
+			if err := TruncateBackupCatalog(tt.args.lc, tt.args.name, tt.args.hdb, tt.args.TrncDaysOlder, tt.args.delete, tt.args.dryrun); (err != nil) != tt.wantErr {
 				t.Errorf("TruncateBackupCatalog() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
