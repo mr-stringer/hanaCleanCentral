@@ -22,6 +22,10 @@ func main() {
 	}
 	log.Printf("Found a valid config for %d databases\n", len(cnf.Databases))
 
+	/*Set up the logger*/
+	lc := make(chan LogMessage)
+	go Logger(ac, lc)
+
 	//basic ranging over DBs found
 	for _, dbc := range cnf.Databases {
 
@@ -45,7 +49,7 @@ func main() {
 		log.Printf("%s:Hana Version found %s\n", dbc.Name, v)
 		log.Printf("%s:Finished tasks", dbc.Name)
 
-		err = TruncateTraceFiles(ac, dbc.Name, db, dbc.TraceRetentionDays)
+		err = TruncateTraceFiles(lc, dbc.Name, db, dbc.TraceRetentionDays, ac.DryRun)
 		if err != nil {
 			log.Printf("%s:Error occured whilst trying to remove old tracesfiles", dbc.Name)
 			log.Printf("%s:Full error message:", dbc.Name)
@@ -54,7 +58,7 @@ func main() {
 			continue
 		}
 
-		err = TruncateBackupCatalog(ac, dbc.Name, db, dbc.BackupCatalogRetentionDays, dbc.DeleteOldBackups)
+		err = TruncateBackupCatalog(lc, dbc.Name, db, dbc.BackupCatalogRetentionDays, dbc.DeleteOldBackups, ac.DryRun)
 		if err != nil {
 			log.Printf("%s:Backup catalog truncation failed", dbc.Name)
 		}
