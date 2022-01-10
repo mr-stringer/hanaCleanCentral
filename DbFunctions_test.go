@@ -63,7 +63,8 @@ func TestTruncateTraceFiles(t *testing.T) {
 
 	/*Create the log channel*/
 	lc := make(chan LogMessage)
-	go Logger(AppConfig{"file", false, false}, lc)
+	quit := make(chan bool)
+	go Logger(AppConfig{"file", false, false}, lc, quit)
 
 	type args struct {
 		lc            chan LogMessage
@@ -116,7 +117,8 @@ func TestTruncateBackupCatalog(t *testing.T) {
 	defer db1.Close()
 
 	lc := make(chan LogMessage)
-	go Logger(AppConfig{"file", false, false}, lc)
+	quit := make(chan bool)
+	go Logger(AppConfig{"file", false, false}, lc, quit)
 
 	type args struct {
 		lc            chan LogMessage

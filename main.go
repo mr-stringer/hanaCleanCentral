@@ -24,7 +24,8 @@ func main() {
 
 	/*Set up the logger*/
 	lc := make(chan LogMessage)
-	go Logger(ac, lc)
+	quit := make(chan bool)
+	go Logger(ac, lc, quit)
 
 	//basic ranging over DBs found
 	for _, dbc := range cnf.Databases {
@@ -63,4 +64,6 @@ func main() {
 			log.Printf("%s:Backup catalog truncation failed", dbc.Name)
 		}
 	}
+	/*flush and quit the logger*/
+	quit <- true
 }
