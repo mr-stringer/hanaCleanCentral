@@ -46,9 +46,9 @@ func GetBackupDeleteComplete(backupid string) string {
 }
 
 func GetAlertCount(days uint) string {
-	return fmt.Sprintf("SELECT COUNT(SNAPSHOT_ID) AS COUNT FROM \"_SYS_STATISTICS\".\"STATISTICS_ALERTS_BASE\" WHERE ALERT_TIMESTAMP < ADD_DAYS(CURRENT_TIMESTAMP, -%d) LIMIT 1", days)
+	return fmt.Sprintf("SELECT COUNT(SNAPSHOT_ID) AS COUNT FROM \"_SYS_STATISTICS\".\"STATISTICS_ALERTS_BASE\" WHERE ALERT_TIMESTAMP < ADD_DAYS(NOW(), -%d) LIMIT 1", days)
 }
 
 func GetAlertDelete(days uint) string {
-	return fmt.Sprintf("DELETE FROM \"_SYS_STATISTICS\".\"STATISTICS_ALERTS_BASE\" WHERE ALERT_TIMESTAMP < ADD_DAYS(CURRENT_TIMESTAMP, -%d)", days)
+	return fmt.Sprintf("DELETE FROM \"_SYS_STATISTICS\".\"STATISTICS_ALERTS_BASE\" WHERE ALERT_TIMESTAMP < ADD_DAYS(NOW(), -%d)", days)
 }

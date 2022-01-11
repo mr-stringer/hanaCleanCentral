@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"log"
 )
 
 //HanaVersion function returns the version string of the database
@@ -72,6 +71,7 @@ func TruncateTraceFiles(lc chan<- LogMessage, name string, hdb *sql.DB, TrncDays
 			_, err := hdb.Exec(GetRemoveTrace(v.Hostname, v.TraceFile))
 			if err != nil {
 				lc <- LogMessage{name, fmt.Sprintf("The tracefile '%s' on host '%s' could not be removed, it may be open!  This will be retried next time.", v.TraceFile, v.Hostname), false}
+				lc <- LogMessage{name, err.Error(), true}
 				continue
 			}
 
@@ -104,7 +104,7 @@ func TruncateBackupCatalog(lc chan<- LogMessage, name string, hdb *sql.DB, TrncD
 		return nil
 	case err != nil:
 		lc <- LogMessage{name, "An error occured querying the database", false}
-		lc <- LogMessage{name, err.Error(), false}
+		lc <- LogMessage{name, err.Error(), true}
 		return fmt.Errorf("query error")
 
 	default:
@@ -116,7 +116,7 @@ func TruncateBackupCatalog(lc chan<- LogMessage, name string, hdb *sql.DB, TrncD
 	rows, err := hdb.Query(GetBackupFileData(backupID))
 	if err != nil {
 		lc <- LogMessage{name, "An error occured querying the database", false}
-		lc <- LogMessage{name, err.Error(), false}
+		lc <- LogMessage{name, err.Error(), true}
 		return fmt.Errorf("failed to retrieve data on backup catalog entries to remove")
 	}
 	defer rows.Close()
@@ -125,6 +125,7 @@ func TruncateBackupCatalog(lc chan<- LogMessage, name string, hdb *sql.DB, TrncD
 		err := rows.Scan(&bf.EntryType, &bf.FileCount, &bf.Bytes)
 		if err != nil {
 			lc <- LogMessage{name, "An error occured querying the database", false}
+			lc <- LogMessage{name, err.Error(), true}
 		}
 		bfs = append(bfs, bf)
 	}
@@ -155,12 +156,12 @@ func TruncateBackupCatalog(lc chan<- LogMessage, name string, hdb *sql.DB, TrncD
 		query = GetBackupDelete(backupID)
 	}
 	lc <- LogMessage{name, fmt.Sprintf("Attempting query: %s", query), true}
-	log.Printf("%s:Attempting query %s", name, query)
 
 	if !dryrun {
 		_, err = hdb.Exec(query)
 		if err != nil {
 			lc <- LogMessage{name, fmt.Sprintf("Query to truncate backup catalog failed: %s", err.Error()), false}
+			lc <- LogMessage{name, err.Error(), true}
 			return fmt.Errorf("couldn't truncate database")
 		}
 
@@ -182,9 +183,12 @@ func ClearAlert(lc chan<- LogMessage, name string, hdb *sql.DB, DeleteOlderDays 
 	switch {
 	case err == sql.ErrNoRows:
 		lc <- LogMessage{name, "DB failed to count rows", false}
+		lc <- LogMessage{name, err.Error(), true}
 		return err
 	case err != nil:
 		lc <- LogMessage{name, "DB failed to query failed", false}
+		lc <- LogMessage{name, err.Error(), true}
+
 		return err
 	default:
 		lc <- LogMessage{name, fmt.Sprintf("Found %d alerts to delete ", ac), false}
@@ -200,7 +204,7 @@ func ClearAlert(lc chan<- LogMessage, name string, hdb *sql.DB, DeleteOlderDays 
 		_, err = hdb.Exec(GetAlertDelete(DeleteOlderDays))
 		if err != nil {
 			lc <- LogMessage{name, "Query to remove alerts failed", false}
-			lc <- LogMessage{name, err.Error(), false}
+			lc <- LogMessage{name, err.Error(), true}
 			return err
 		}
 		lc <- LogMessage{name, fmt.Sprintf("Sucessfully deleted %d alerts", ac), false}
