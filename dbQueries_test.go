@@ -57,3 +57,28 @@ func TestGetRemoveTrace(t *testing.T) {
 		})
 	}
 }
+
+func TestGetAlertCount(t *testing.T) {
+	type args struct {
+		days uint
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{"Good01", args{1}, "SELECT COUNT(SNAPSHOT_ID) AS COUNT FROM \"_SYS_STATISTICS\".\"STATISTICS_ALERTS_BASE\" WHERE ALERT_TIMESTAMP < ADD_DAYS(NOW(), -1) LIMIT 1"},
+		{"Good02", args{2}, "SELECT COUNT(SNAPSHOT_ID) AS COUNT FROM \"_SYS_STATISTICS\".\"STATISTICS_ALERTS_BASE\" WHERE ALERT_TIMESTAMP < ADD_DAYS(NOW(), -2) LIMIT 1"},
+		{"Good03", args{4}, "SELECT COUNT(SNAPSHOT_ID) AS COUNT FROM \"_SYS_STATISTICS\".\"STATISTICS_ALERTS_BASE\" WHERE ALERT_TIMESTAMP < ADD_DAYS(NOW(), -4) LIMIT 1"},
+		{"Good04", args{10}, "SELECT COUNT(SNAPSHOT_ID) AS COUNT FROM \"_SYS_STATISTICS\".\"STATISTICS_ALERTS_BASE\" WHERE ALERT_TIMESTAMP < ADD_DAYS(NOW(), -10) LIMIT 1"},
+		{"Good05", args{28}, "SELECT COUNT(SNAPSHOT_ID) AS COUNT FROM \"_SYS_STATISTICS\".\"STATISTICS_ALERTS_BASE\" WHERE ALERT_TIMESTAMP < ADD_DAYS(NOW(), -28) LIMIT 1"},
+		{"Good06", args{60}, "SELECT COUNT(SNAPSHOT_ID) AS COUNT FROM \"_SYS_STATISTICS\".\"STATISTICS_ALERTS_BASE\" WHERE ALERT_TIMESTAMP < ADD_DAYS(NOW(), -60) LIMIT 1"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GetAlertCount(tt.args.days); got != tt.want {
+				t.Errorf("GetAlertCount() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

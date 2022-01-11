@@ -48,7 +48,6 @@ func main() {
 			continue
 		}
 		log.Printf("%s:Hana Version found %s\n", dbc.Name, v)
-		log.Printf("%s:Finished tasks", dbc.Name)
 
 		err = TruncateTraceFiles(lc, dbc.Name, db, dbc.TraceRetentionDays, ac.DryRun)
 		if err != nil {
@@ -63,7 +62,17 @@ func main() {
 		if err != nil {
 			log.Printf("%s:Backup catalog truncation failed", dbc.Name)
 		}
+
+		if dbc.ClearAlerts {
+			err = ClearAlert(lc, dbc.Name, db, dbc.AlertsOlderDeleteDays, ac.DryRun)
+			if err != nil {
+				lc <- LogMessage{dbc.Name, "Failed to clear old alerts", false}
+			}
+		} else {
+			lc <- LogMessage{dbc.Name, "Skipping alert clearing", false}
+		}
 	}
+
 	/*flush and quit the logger*/
 	quit <- true
 }

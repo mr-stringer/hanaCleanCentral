@@ -44,3 +44,11 @@ func GetBackupDelete(backupid string) string {
 func GetBackupDeleteComplete(backupid string) string {
 	return fmt.Sprintf("BACKUP CATALOG DELETE ALL BEFORE BACKUP_ID %s COMPLETE", backupid)
 }
+
+func GetAlertCount(days uint) string {
+	return fmt.Sprintf("SELECT COUNT(SNAPSHOT_ID) AS COUNT FROM \"_SYS_STATISTICS\".\"STATISTICS_ALERTS_BASE\" WHERE ALERT_TIMESTAMP < ADD_DAYS(NOW(), -%d) LIMIT 1", days)
+}
+
+func GetAlertDelete(days uint) string {
+	return fmt.Sprintf("DELETE FROM \"_SYS_STATISTICS\".\"STATISTICS_ALERTS_BASE\" WHERE ALERT_TIMESTAMP < ADD_DAYS(NOW(), -%d)", days)
+}

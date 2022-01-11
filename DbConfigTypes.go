@@ -17,6 +17,8 @@ type DbConfig struct {
 	TruncateBackupCatalog      bool
 	BackupCatalogRetentionDays uint
 	DeleteOldBackups           bool
+	ClearAlerts                bool
+	AlertsOlderDeleteDays      uint
 }
 
 func (hdb DbConfig) Dsn() string {
