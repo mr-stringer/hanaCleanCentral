@@ -43,11 +43,11 @@ func TestGetRemoveTrace(t *testing.T) {
 		args args
 		want string
 	}{
-		{"Good01", args{"hanaserver", "trace.trc"}, "ALTER SYSTEM REMOVE TRACES('hanaserver', 'trace.trc'"},
-		{"Good02", args{"localhost", "nameserver_host.00000.000.trc"}, "ALTER SYSTEM REMOVE TRACES('localhost', 'nameserver_host.00000.000.trc'"},
-		{"Good03", args{"hasd1453", "trace.trc"}, "ALTER SYSTEM REMOVE TRACES('hasd1453', 'trace.trc'"},
-		{"Good04", args{"long.server.name.example.int", "trace.trc"}, "ALTER SYSTEM REMOVE TRACES('long.server.name.example.int', 'trace.trc'"},
-		{"Good05", args{"long.server.name.example.int", "compileserver_alert_host_20210312144914.gz"}, "ALTER SYSTEM REMOVE TRACES('long.server.name.example.int', 'compileserver_alert_host_20210312144914.gz'"},
+		{"Good01", args{"hanaserver", "trace.trc"}, "ALTER SYSTEM REMOVE TRACES('hanaserver', 'trace.trc')"},
+		{"Good02", args{"localhost", "nameserver_host.00000.000.trc"}, "ALTER SYSTEM REMOVE TRACES('localhost', 'nameserver_host.00000.000.trc')"},
+		{"Good03", args{"hasd1453", "trace.trc"}, "ALTER SYSTEM REMOVE TRACES('hasd1453', 'trace.trc')"},
+		{"Good04", args{"long.server.name.example.int", "trace.trc"}, "ALTER SYSTEM REMOVE TRACES('long.server.name.example.int', 'trace.trc')"},
+		{"Good05", args{"long.server.name.example.int", "compileserver_alert_host_20210312144914.gz"}, "ALTER SYSTEM REMOVE TRACES('long.server.name.example.int', 'compileserver_alert_host_20210312144914.gz')"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -78,6 +78,28 @@ func TestGetAlertCount(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := GetAlertCount(tt.args.days); got != tt.want {
 				t.Errorf("GetAlertCount() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetCheckTracePresent(t *testing.T) {
+	type args struct {
+		filename string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{"Good01", args{"TRACEFILE01"}, "SELECT COUNT(FILE_NAME) AS TRACE FROM \"SYS\".\"M_TRACEFILES\" WHERE FILE_NAME = 'TRACEFILE01'"},
+		{"Good02", args{"nameserver_host.00000.000.trc"}, "SELECT COUNT(FILE_NAME) AS TRACE FROM \"SYS\".\"M_TRACEFILES\" WHERE FILE_NAME = 'nameserver_host.00000.000.trc'"},
+		{"Good02", args{"compileserver_alert_host_20210312144914.gz"}, "SELECT COUNT(FILE_NAME) AS TRACE FROM \"SYS\".\"M_TRACEFILES\" WHERE FILE_NAME = 'compileserver_alert_host_20210312144914.gz'"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GetCheckTracePresent(tt.args.filename); got != tt.want {
+				t.Errorf("GetCheckTracePresent() = %v, want %v", got, tt.want)
 			}
 		})
 	}

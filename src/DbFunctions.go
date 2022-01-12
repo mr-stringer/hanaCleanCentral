@@ -74,7 +74,31 @@ func TruncateTraceFiles(lc chan<- LogMessage, name string, hdb *sql.DB, TrncDays
 				lc <- LogMessage{name, err.Error(), true}
 				continue
 			}
+			//Check if the trace file was actually deleted
+			var tracePresent uint = 0
 
+			lc <- LogMessage{name, "Checking if tracefile was removed", true}
+			lc <- LogMessage{name, GetCheckTracePresent(v.TraceFile), true}
+			err = hdb.QueryRow(GetCheckTracePresent(v.TraceFile)).Scan(&tracePresent)
+			switch {
+			case err == sql.ErrNoRows:
+				lc <- LogMessage{name, "No rows returned", true}
+				lc <- LogMessage{name, err.Error(), true}
+				lc <- LogMessage{name, fmt.Sprintf("Failed to remove tracefile %s", v.TraceFile), false}
+				continue /*try the next one*/
+			case err != nil:
+				lc <- LogMessage{name, "DB failed to query failed", false}
+				lc <- LogMessage{name, err.Error(), true}
+				lc <- LogMessage{name, fmt.Sprintf("Failed to remove tracefile %s", v.TraceFile), false}
+				continue /*try the next one*/
+			default:
+				if tracePresent == 0 {
+					lc <- LogMessage{name, fmt.Sprintf("Sucessfully removed trace file %s", v.TraceFile), true}
+				} else { /*for trace files we should only ever see 0 or 1*/
+					lc <- LogMessage{name, fmt.Sprintf("Tracefile %s was not removed", v.TraceFile), true}
+					continue
+				}
+			}
 			count += 1
 			saved += v.SizeBytes
 		}
@@ -122,7 +146,7 @@ func TruncateBackupCatalog(lc chan<- LogMessage, name string, hdb *sql.DB, TrncD
 	defer rows.Close()
 	for rows.Next() {
 		bf := BackupFiles{}
-		err := rows.Scan(&bf.EntryType, &bf.FileCount, &bf.Bytes)
+		err := rows.Scan(&bf.EntryType, &bf.FileCount, &bf.Bytes) //need unit test here!
 		if err != nil {
 			lc <- LogMessage{name, "An error occured querying the database", false}
 			lc <- LogMessage{name, err.Error(), true}
