@@ -16,9 +16,14 @@ func GetTraceFileQuery(days uint) string {
 	return fmt.Sprintf("SELECT HOST, FILE_NAME, FILE_SIZE, FILE_MTIME FROM \"SYS\".\"M_TRACEFILES\" WHERE FILE_MTIME < (SELECT ADD_DAYS(NOW(), -%d) FROM DUMMY) AND RIGHT(FILE_NAME, 3) = 'trc' OR FILE_MTIME < (SELECT ADD_DAYS(NOW(), -%d) FROM DUMMY) AND RIGHT(FILE_NAME, 2) = 'gz'", days, days)
 }
 
+func GetCheckTracePresent(filename string) string {
+	/*trace file names should always be unique as they contain hostnames, rotation numbers etc*/
+	return fmt.Sprintf("SELECT COUNT(FILE_NAME) AS TRACE FROM \"SYS\".\"M_TRACEFILES\" WHERE FILE_NAME = '%s'", filename)
+}
+
 //Returns a string query that is used to attempt to remove the inetified tracefile
 func GetRemoveTrace(hostname, filename string) string {
-	return fmt.Sprintf("ALTER SYSTEM REMOVE TRACES('%s', '%s'", hostname, filename)
+	return fmt.Sprintf("ALTER SYSTEM REMOVE TRACES('%s', '%s')", hostname, filename)
 }
 
 //Returns a string query that is used to find the backup ID of the most recent full backup that is older than the days given in the argument
