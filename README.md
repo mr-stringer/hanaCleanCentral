@@ -30,7 +30,7 @@ hanaCleanCentral is controlled with a combination of command-line flags and a co
 
 The -f flag specifies the configuration.  The configuration file represents an array of DbConfig structs described below.
 
-```go-lang
+```go
 type DbConfig struct {
     Name                       string // Friendly name of the DB.  <Tenant>@<SID> is a good option here
     Hostname                   string // Hostname or IP address of the primary HANA node
