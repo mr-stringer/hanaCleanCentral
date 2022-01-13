@@ -44,9 +44,10 @@ type DbConfig struct {
     DeleteOldBackups           bool   // If true, truncated files will be physically removed, if false entries are removed from the database only - Defaults to false
     ClearAlerts                bool   // If true, old alerts are removed from the embedded statistics server - Defaults to false
     AlertsOlderDeleteDays      uint   // Specifies the number of days of alerts to retain
-}```
+}
+```
 
-An example of a configuration file  a single databases is provided below.
+An example of a configuration file a single databases is provided below.
 
 ```JSON
 {
