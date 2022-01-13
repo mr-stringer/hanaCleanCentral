@@ -1,21 +1,70 @@
 # hanaCleanCentral
 
-A centralised maintenance tool for the HANA database.
+A centralised maintenance tool for routine the HANA database.
 
 ## Do not use, yet
 
-This project is not released.  You are advised not to use this software at this time
+This project is in early development.  There are no releases at this time.  Once released, binaries will be available, but of course, you are welcome to compile this yourself.
 
-## Docs
+## Introduction
 
-hanaCleanCentral is based on [hanacleaner](https://github.com/chriselswede/hanacleaner).  This project aims to perform all of the housekeeping tasks performed by hanacleaner but do so in a centralised manner.  Rather than being installed upon each HANA database, hanaCleanCentral should be installed on a central server where it will remotely housekeep many HANA instance.  hanaCleanCentral can perform maintainence on one remote database at a time or many in parallel.
+hanaCleanCentral is based on [hanacleaner](https://github.com/chriselswede/hanacleaner).  This project aims to perform a similar range of tasks that hanacleaner performs but centralised.  Rather than being installed on each HANA database, hanaCleanCentral will be installed on a central server where it will remotely housekeep many HANA instances.  hanaCleanCentral can be configured to perform maintenance on remote databases in a series or parallel.
 
-Due to the way that tracefiles are deleted, we need to go into each system and tenant DB individually.  This has the advantage that each tenant can have individual settings, meaning that, for example, two tenant DBs on a single SID could have different tracefile retention periods and so on.
+## Required Privileges
 
-## Required Privs
+The following list documents the required privileges for hanaCleanCentral.  This list is likely to grow as more features are developed.  It is strongly recommended to use a dedicated user for the hanaCleanCentral application.
 
 |Application area |Type | Value |
 |---|---|---|
 |General|Role|`MANAGEMENT`|
 |TraceFile management |Privilege|`TRACE ADMIN`|
 |Backup catalog management|Privilege|`BACKUP OPERATOR`|
+
+## Flags and Configuration
+
+hanaCleanCentral is controlled with a combination of command-line flags and a configuration file.  Supported flags are:
+
+* -f the location of the configuration file.  Required, defaults to config.json
+* -v verbose.  When used, verbose logging is enabled, defaults to off
+* -d dry run.  When used, only read-only queries will be executed.  This mode will make no changes to the target databases.
+
+The -f flag specifies the configuration.  The configuration file represents an array of DbConfig structs described below.
+
+```go-lang
+type DbConfig struct {
+    Name                       string // Friendly name of the DB.  <Tenant>@<SID> is a good option here
+    Hostname                   string // Hostname or IP address of the primary HANA node
+    Port                       uint   // Port of the HANA DB
+    Username                   string // HANA DB user name to use
+    Password                   string // Password for HANA DB user
+    RemoveTraces               bool   // If true, trace file management will be enabled - Defaults to false
+    TraceRetentionDays         uint   // Specifies the number of days of trace files to retain
+    TruncateBackupCatalog      bool   // If true, backup catalog truncation will be enabled - Defaults to false
+    BackupCatalogRetentionDays uint   // Specifies the number of days of entries to retain
+    DeleteOldBackups           bool   // If true, truncated files will be physically removed, if false entries are removed from the database only - Defaults to false
+    ClearAlerts                bool   // If true, old alerts are removed from the embedded statistics server - Defaults to false
+    AlertsOlderDeleteDays      uint   // Specifies the number of days of alerts to retain
+}```
+
+An example of a configuration file  a single databases is provided below.
+
+```JSON
+{
+    "Databases":[
+        {
+            "Name": "DB1@HAN",
+            "Hostname": "hanasever.int.bybiz.net",
+            "Port": 30041,
+            "Username": "HccUser",
+            "Password": "234F£$5gf£t345H$%",
+            "RemoveTraces": true,
+            "TraceRetentionDays": 60,
+            "TruncateBackupCatalog": false,
+            "BackupCatalogRetentionDays": 60,
+            "DeleteOldBackups": true,
+            "ClearAlerts" :true,
+            "AlertsOlderDeleteDays": 60
+        }
+    ]
+}
+```
