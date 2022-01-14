@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"testing"
 )
 
@@ -19,6 +20,27 @@ func TestDbConfig_Dsn(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.hdb.Dsn(); got != tt.want {
 				t.Errorf("DbConfig.GetDsn() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDbConfig_GetPasswordFromEnv(t *testing.T) {
+	tests := []struct {
+		name    string
+		db      *DbConfig
+		wantErr bool
+	}{
+		{"Bad_NoEnvVarSet", &DbConfig{"SystemDB_HN1", "hanadb.mydomain.int", 30015, "sstringer", "", true, 14, false, 0, false, true, 30}, true},
+		{"Good_EnvVarSet", &DbConfig{"SystemDB_HN1", "hanadb.mydomain.int", 30015, "sstringer", "", true, 14, false, 0, false, true, 30}, false},
+	}
+	for _, tt := range tests {
+		if tt.name == "Good_EnvVarSet" {
+			os.Setenv("HCC_SystemDB_HN1", "!g03g3598fu254g36t")
+		}
+		t.Run(tt.name, func(t *testing.T) {
+			if err := tt.db.GetPasswordFromEnv(); (err != nil) != tt.wantErr {
+				t.Errorf("DbConfig.GetPasswordFromEnv() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

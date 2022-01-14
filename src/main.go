@@ -20,6 +20,14 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	/*check config for duplicates*/
+	err = cnf.CheckForDupeNames()
+	if err != nil {
+		log.Printf("%s\n", err.Error())
+		return
+	}
+
 	log.Printf("Found a valid config for %d databases\n", len(cnf.Databases))
 
 	/*Set up the logger*/
@@ -29,6 +37,13 @@ func main() {
 
 	//basic ranging over DBs found
 	for _, dbc := range cnf.Databases {
+
+		/*Get password from environment if password not set*/
+		err = dbc.GetPasswordFromEnv()
+		if err != nil {
+			lc <- LogMessage{dbc.Name, "No password for DB in environment or config file, skipping this DB", false}
+			continue
+		}
 
 		db, err := dbc.NewDb()
 		if err != nil {
@@ -75,4 +90,5 @@ func main() {
 
 	/*flush and quit the logger*/
 	quit <- true
+
 }
