@@ -1,5 +1,7 @@
 # hanaCleanCentral
 
+[![Go](https://github.com/mr-stringer/hanaCleanCentral/actions/workflows/go.yml/badge.svg)](https://github.com/mr-stringer/hanaCleanCentral/actions/workflows/go.yml)
+
 A centralised maintenance tool for routine the HANA database.
 
 ## Do not use, yet
@@ -9,6 +11,17 @@ This project is in early development.  There are no releases at this time.  Once
 ## Introduction
 
 hanaCleanCentral is based on [hanacleaner](https://github.com/chriselswede/hanacleaner).  This project aims to perform a similar range of tasks that hanacleaner performs but centralised.  Rather than being installed on each HANA database, hanaCleanCentral will be installed on a central server where it will remotely housekeep many HANA instances.  hanaCleanCentral can be configured to perform maintenance on remote databases in a series or parallel.
+
+## hanacleaner vs hanaCleanCentral
+
+The following table describes the differences between hanacleaner and hanaCleanCentral.  You can use this table to help you decided which project is right for you.
+
+| Area | hanacleaner | hanaCleanCentral | Desscription |
+|---|---|---|---|
+| Deployment | Local | Central | hanacleaner is deployed locally on each database server that is to be managed.  hanaCleanCentral can manage many databases from a single installation |
+| Execution | Uses SQL & OS level commands | SQL only | hanacleaner can perform more types of tasks as it executes SQL statements and OS level commands.  hanaCleanCentral performs SQL statements only. |
+| Runtime dependencies | Relies on python runtime shipped with HANA. | Statically compiled, no specific dependencies | hanaCleanCentral can be compiled for and run on any major OS/architecture combination.
+| Code testing | No unit testing | Significant unit testing coverage | Unit tests helps ensure that code executes as expeted and allows developers to simulate situations that may be rare in the field |
 
 ## Required Privileges
 
