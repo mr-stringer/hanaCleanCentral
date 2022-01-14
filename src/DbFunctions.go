@@ -235,3 +235,38 @@ func ClearAlert(lc chan<- LogMessage, name string, hdb *sql.DB, DeleteOlderDays 
 	}
 	return nil
 }
+
+//This function deletes free logsegments from the log volume.  Performing this task will reduce the disk space used in the log volume
+//but may also cause a minor IO penalty when new new log segments need to be created.  It is more important to run this function is an MDC
+//environemt than a non-MDC one.
+func ReclaimLog(lc chan<- LogMessage, name string, hdb *sql.DB, dryrun bool) error {
+	lc <- LogMessage{"name", "Starting reclaim log function", true}
+
+	var count uint
+	var bytes uint64
+	lc <- LogMessage{name, fmt.Sprintf("Running Query:%s", QUERY_GetFeeLogSegments), true}
+	err := hdb.QueryRow(QUERY_GetFeeLogSegments).Scan(&count, &bytes)
+	switch {
+	case err == sql.ErrNoRows:
+		lc <- LogMessage{name, "No rows produced by query", false}
+		return fmt.Errorf("no results")
+	case err != nil:
+		lc <- LogMessage{name, "Query produced a database error", false}
+		return fmt.Errorf("db error")
+	}
+
+	lc <- LogMessage{name, fmt.Sprintf("Attempting to clear %d log segments saving %.2f MiB of disk space", count, float32(bytes/1024/1024)), false}
+
+	lc <- LogMessage{name, fmt.Sprintf("Running Query:%s", QUERY_RecalimLog), true}
+
+	if !dryrun {
+		_, err = hdb.Exec(QUERY_RecalimLog)
+		if err != nil {
+			lc <- LogMessage{name, "Query produced a database error", false}
+			return fmt.Errorf("db error")
+		}
+		lc <- LogMessage{name, "Log Reclaim was sucessful.", false}
+	}
+
+	return nil
+}

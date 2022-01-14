@@ -7,7 +7,13 @@ all of the DB queries are listed here and called from here*/
 
 /*Queries that are static are available as constant strings whereas queries that are variable are returned from functions*/
 
+//Query to get HANA version
 const QUERY_GetVersion string = "SELECT VERSION FROM \"SYS\".\"M_DATABASE\""
+
+//Query to get the number of free log segments and their total size in bytes
+const QUERY_GetFeeLogSegments string = "SELECT COUNT(STATE) AS COUNT, SUM(TOTAL_SIZE) AS BYTES FROM SYS.M_LOG_SEGMENTS WHERE STATE = 'Free'"
+
+const QUERY_RecalimLog string = "ALTER SYSTEM RECLAIM LOG"
 
 //The function returns a string which is used to query the HANA dataase. The function takes the argument days, this argument is used in the query to define the age of tracefiles
 //that should be returned.  If the days is set to one, only tracefiles that have not been modified in the last 24 hours will be retutned.  In addition, they query will only return

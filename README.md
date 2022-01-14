@@ -32,6 +32,7 @@ The following list documents the required privileges for hanaCleanCentral.  This
 |General|Role|`MANAGEMENT`|
 |TraceFile management |Privilege|`TRACE ADMIN`|
 |Backup catalog management|Privilege|`BACKUP OPERATOR`|
+|Log management|Privledge|`LOG ADMIN`|
 
 ## Flags and Configuration
 

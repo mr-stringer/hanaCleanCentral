@@ -33,6 +33,10 @@ func main() {
 	/*Set up the logger*/
 	lc := make(chan LogMessage)
 	quit := make(chan bool)
+
+	defer close(lc)
+	defer close(quit)
+
 	go Logger(ac, lc, quit)
 
 	//basic ranging over DBs found
@@ -90,5 +94,7 @@ func main() {
 
 	/*flush and quit the logger*/
 	quit <- true
+	close(quit)
+	close(lc)
 
 }
