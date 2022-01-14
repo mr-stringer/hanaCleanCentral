@@ -3,6 +3,8 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"log"
+	"os"
 )
 
 //Struct for holding database configuration
@@ -38,4 +40,16 @@ func (hdb *DbConfig) NewDb() (*sql.DB, error) {
 	}
 
 	return db, nil
+}
+
+//Gets the database password from the enviroment.
+//The code search for the variable HCC_<dbConfig.Name>
+func (db *DbConfig) GetPasswordFromEnv() error {
+
+	log.Printf("Searching for password for %s from environment variable", db.Name)
+	db.Password = os.Getenv(fmt.Sprintf("HCC_%s", db.Name))
+	if db.Password == "" {
+		return fmt.Errorf("was not able to source password from %s for the environement", db.Name)
+	}
+	return nil
 }
