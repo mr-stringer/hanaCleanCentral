@@ -244,7 +244,7 @@ func ReclaimLog(lc chan<- LogMessage, name string, hdb *sql.DB, dryrun bool) err
 
 	var count uint
 	var bytes uint64
-	lc <- LogMessage{name, fmt.Sprintf("Running Query:%s", QUERY_GetFeeLogSegments), true}
+	lc <- LogMessage{name, fmt.Sprintf("Running Query:%s", QUERY_GetFeeLogSegments), false}
 	err := hdb.QueryRow(QUERY_GetFeeLogSegments).Scan(&count, &bytes)
 	switch {
 	case err == sql.ErrNoRows:
@@ -257,7 +257,7 @@ func ReclaimLog(lc chan<- LogMessage, name string, hdb *sql.DB, dryrun bool) err
 
 	lc <- LogMessage{name, fmt.Sprintf("Attempting to clear %d log segments saving %.2f MiB of disk space", count, float32(bytes/1024/1024)), false}
 
-	lc <- LogMessage{name, fmt.Sprintf("Running Query:%s", QUERY_RecalimLog), true}
+	lc <- LogMessage{name, fmt.Sprintf("Running Query:%s", QUERY_RecalimLog), false}
 
 	if !dryrun {
 		_, err = hdb.Exec(QUERY_RecalimLog)
@@ -265,6 +265,7 @@ func ReclaimLog(lc chan<- LogMessage, name string, hdb *sql.DB, dryrun bool) err
 			lc <- LogMessage{name, "Query produced a database error", false}
 			return fmt.Errorf("db error")
 		}
+
 		lc <- LogMessage{name, "Log Reclaim was sucessful.", false}
 	}
 

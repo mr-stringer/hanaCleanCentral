@@ -338,15 +338,27 @@ func TestReclaimLog(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"Good01", args{lc, "db@sid", db1, false}, false},
+		{"Good", args{lc, "db@sid", db1, false}, false},
+		{"GetSegmentsNoRows", args{lc, "db@sid", db1, false}, true},
+		{"GetSegmentsDbError", args{lc, "db@sid", db1, false}, true},
+		{"ReclaimLogDbError", args{lc, "db@sid", db1, false}, true},
 	}
 	for _, tt := range tests {
 
 		switch {
-		case tt.name == "Good01":
+		case tt.name == "Good":
 			rows1 := sqlmock.NewRows([]string{"COUNT", "BYTES"}).AddRow("10", "2048000")
 			mock.ExpectQuery(QUERY_GetFeeLogSegments).WillReturnRows(rows1)
 			mock.ExpectExec(QUERY_RecalimLog).WillReturnResult(sqlmock.NewResult(1, 1))
+		case tt.name == "GetSegmentsDbError":
+			rows1 := sqlmock.NewRows([]string{"COUNT", "BYTES"})
+			mock.ExpectQuery(QUERY_GetFeeLogSegments).WillReturnRows(rows1)
+		case tt.name == "GetSegmentsDbError":
+			mock.ExpectQuery(QUERY_GetFeeLogSegments).WillReturnError(fmt.Errorf("some db Error"))
+		case tt.name == "ReclaimLogDbError":
+			rows1 := sqlmock.NewRows([]string{"COUNT", "BYTES"}).AddRow("10", "2048000")
+			mock.ExpectQuery(QUERY_GetFeeLogSegments).WillReturnRows(rows1)
+			mock.ExpectExec(QUERY_RecalimLog).WillReturnError(fmt.Errorf("some DB error"))
 		}
 
 		t.Run(tt.name, func(t *testing.T) {

@@ -2,7 +2,7 @@
 
 [![Go](https://github.com/mr-stringer/hanaCleanCentral/actions/workflows/go.yml/badge.svg)](https://github.com/mr-stringer/hanaCleanCentral/actions/workflows/go.yml)
 
-A centralised maintenance tool for routine the HANA database.
+A centralised maintenance tool for the HANA database.
 
 ## Do not use, yet
 
