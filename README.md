@@ -58,7 +58,7 @@ type DbConfig struct {
     DeleteOldBackups           bool   // If true, truncated files will be physically removed, if false entries are removed from the database only - Defaults to false
     ClearAlerts                bool   // If true, old alerts are removed from the embedded statistics server - Defaults to false
     AlertsOlderDeleteDays      uint   // Specifies the number of days of alerts to retain
-	ReclaimLog                 bool   // If true, free log segments will be removed from the file system
+    ReclaimLog                 bool   // If true, free log segments will be removed from the file system
 
 }
 ```
