@@ -12,7 +12,9 @@
             "BackupCatalogRetentionDays": 0,
             "DeleteOldBackups": false,
             "ClearAlerts": true,
-            "AlertsOlderDeleteDays": 30
+            "AlertsOlderDeleteDays": 30,
+            "ReclaimLog": true
+
         },
         {
             "Name": "Prod",
@@ -26,7 +28,8 @@
             "BackupCatalogRetentionDays": 60,
             "DeleteOldBackups": false,
             "ClearAlerts": true,
-            "AlertsOlderDeleteDays": 30
+            "AlertsOlderDeleteDays": 30,
+            "ReclaimLog": false
         }
     ]
 }

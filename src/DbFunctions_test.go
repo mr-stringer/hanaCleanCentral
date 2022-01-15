@@ -310,3 +310,63 @@ func TestClearAlert(t *testing.T) {
 		})
 	}
 }
+
+func TestReclaimLog(t *testing.T) {
+	/*Mock DB*/
+	db1, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	if err != nil {
+		t.Errorf("an error '%s' was not expected when opening mock database connection", err)
+	}
+	defer db1.Close()
+
+	lc := make(chan LogMessage)
+	quit := make(chan bool)
+
+	defer close(lc)
+	defer close(quit)
+
+	go Logger(AppConfig{"file", false, false}, lc, quit)
+
+	type args struct {
+		lc     chan<- LogMessage
+		name   string
+		hdb    *sql.DB
+		dryrun bool
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{"Good", args{lc, "db@sid", db1, false}, false},
+		{"GetSegmentsNoRows", args{lc, "db@sid", db1, false}, true},
+		{"GetSegmentsDbError", args{lc, "db@sid", db1, false}, true},
+		{"ReclaimLogDbError", args{lc, "db@sid", db1, false}, true},
+	}
+	for _, tt := range tests {
+
+		switch {
+		case tt.name == "Good":
+			rows1 := sqlmock.NewRows([]string{"COUNT", "BYTES"}).AddRow("10", "2048000")
+			mock.ExpectQuery(QUERY_GetFeeLogSegments).WillReturnRows(rows1)
+			mock.ExpectExec(QUERY_RecalimLog).WillReturnResult(sqlmock.NewResult(1, 1))
+		case tt.name == "GetSegmentsDbError":
+			rows1 := sqlmock.NewRows([]string{"COUNT", "BYTES"})
+			mock.ExpectQuery(QUERY_GetFeeLogSegments).WillReturnRows(rows1)
+		case tt.name == "GetSegmentsDbError":
+			mock.ExpectQuery(QUERY_GetFeeLogSegments).WillReturnError(fmt.Errorf("some db Error"))
+		case tt.name == "ReclaimLogDbError":
+			rows1 := sqlmock.NewRows([]string{"COUNT", "BYTES"}).AddRow("10", "2048000")
+			mock.ExpectQuery(QUERY_GetFeeLogSegments).WillReturnRows(rows1)
+			mock.ExpectExec(QUERY_RecalimLog).WillReturnError(fmt.Errorf("some DB error"))
+		}
+
+		t.Run(tt.name, func(t *testing.T) {
+			if err := ReclaimLog(tt.args.lc, tt.args.name, tt.args.hdb, tt.args.dryrun); (err != nil) != tt.wantErr {
+				t.Errorf("ReclaimLog() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+
+	quit <- true
+}

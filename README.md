@@ -2,7 +2,7 @@
 
 [![Go](https://github.com/mr-stringer/hanaCleanCentral/actions/workflows/go.yml/badge.svg)](https://github.com/mr-stringer/hanaCleanCentral/actions/workflows/go.yml)
 
-A centralised maintenance tool for routine the HANA database.
+A centralised maintenance tool for the HANA database.
 
 ## Do not use, yet
 
@@ -32,6 +32,7 @@ The following list documents the required privileges for hanaCleanCentral.  This
 |General|Role|`MANAGEMENT`|
 |TraceFile management |Privilege|`TRACE ADMIN`|
 |Backup catalog management|Privilege|`BACKUP OPERATOR`|
+|Log management|Privledge|`LOG ADMIN`|
 
 ## Flags and Configuration
 
@@ -57,6 +58,8 @@ type DbConfig struct {
     DeleteOldBackups           bool   // If true, truncated files will be physically removed, if false entries are removed from the database only - Defaults to false
     ClearAlerts                bool   // If true, old alerts are removed from the embedded statistics server - Defaults to false
     AlertsOlderDeleteDays      uint   // Specifies the number of days of alerts to retain
+	ReclaimLog                 bool   // If true, free log segments will be removed from the file system
+
 }
 ```
 
