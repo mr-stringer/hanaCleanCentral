@@ -90,6 +90,15 @@ func main() {
 		} else {
 			lc <- LogMessage{dbc.Name, "Skipping alert clearing", false}
 		}
+
+		if dbc.ReclaimLog {
+			err = ReclaimLog(lc, dbc.Name, db, ac.DryRun)
+			if err != nil {
+				lc <- LogMessage{dbc.Name, "Failed to reclaim log space", false}
+			}
+		} else {
+			lc <- LogMessage{dbc.Name, "Skipping Reclaim Log", false}
+		}
 	}
 
 	/*flush and quit the logger*/

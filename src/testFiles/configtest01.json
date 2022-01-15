@@ -12,7 +12,8 @@
             "BackupCatalogRetentionDays": 0,
             "DeleteOldBackups": false,
             "ClearAlerts": true,
-            "AlertsOlderDeleteDays": 30
+            "AlertsOlderDeleteDays": 30,
+            "ReclaimLog": true
         }
     ]
 }
