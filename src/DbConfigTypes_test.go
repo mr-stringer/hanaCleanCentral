@@ -11,10 +11,10 @@ func TestDbConfig_Dsn(t *testing.T) {
 		hdb  DbConfig
 		want string
 	}{
-		{"good001", DbConfig{"test", "localhost", 30015, "admin", "password", true, 14, true, 14, true, true, 30, true}, "hdb://admin:password@localhost:30015"},
-		{"good002", DbConfig{"test", "dbserver.int.comp.net", 31013, "admin", "password", true, 14, true, 14, true, true, 30, true}, "hdb://admin:password@dbserver.int.comp.net:31013"},
-		{"good003", DbConfig{"test", "nvfr111", 30015, "hccadmin", "345ertgfdG$", true, 14, true, 14, true, true, 30, true}, "hdb://hccadmin:345ertgfdG$@nvfr111:30015"},
-		{"good004", DbConfig{"test", "localhost", 30015, "admin", "password", true, 14, true, 14, true, true, 30, false}, "hdb://admin:password@localhost:30015"},
+		{"good001", DbConfig{"test", "localhost", 30015, "admin", "password", true, 14, true, 14, true, true, 30, true, true, 60}, "hdb://admin:password@localhost:30015"},
+		{"good002", DbConfig{"test", "dbserver.int.comp.net", 31013, "admin", "password", true, 14, true, 14, true, true, 30, true, true, 60}, "hdb://admin:password@dbserver.int.comp.net:31013"},
+		{"good003", DbConfig{"test", "nvfr111", 30015, "hccadmin", "345ertgfdG$", true, 14, true, 14, true, true, 30, true, true, 60}, "hdb://hccadmin:345ertgfdG$@nvfr111:30015"},
+		{"good004", DbConfig{"test", "localhost", 30015, "admin", "password", true, 14, true, 14, true, true, 30, false, false, 0}, "hdb://admin:password@localhost:30015"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -31,8 +31,8 @@ func TestDbConfig_GetPasswordFromEnv(t *testing.T) {
 		db      *DbConfig
 		wantErr bool
 	}{
-		{"Bad_NoEnvVarSet", &DbConfig{"SystemDB_HN1", "hanadb.mydomain.int", 30015, "sstringer", "", true, 14, false, 0, false, true, 30, true}, true},
-		{"Good_EnvVarSet", &DbConfig{"SystemDB_HN1", "hanadb.mydomain.int", 30015, "sstringer", "", true, 14, false, 0, false, true, 30, true}, false},
+		{"Bad_NoEnvVarSet", &DbConfig{"SystemDB_HN1", "hanadb.mydomain.int", 30015, "sstringer", "", true, 14, false, 0, false, true, 30, true, true, 60}, true},
+		{"Good_EnvVarSet", &DbConfig{"SystemDB_HN1", "hanadb.mydomain.int", 30015, "sstringer", "", true, 14, false, 0, false, true, 30, true, true, 60}, false},
 	}
 	for _, tt := range tests {
 		if tt.name == "Good_EnvVarSet" {

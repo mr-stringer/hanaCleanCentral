@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 )
 
 //HanaVersion function returns the version string of the database
@@ -219,7 +220,7 @@ func ClearAlert(lc chan<- LogMessage, name string, hdb *sql.DB, DeleteOlderDays 
 	}
 
 	if ac == 0 {
-		lc <- LogMessage{name, "Nothing to delete", false}
+		lc <- LogMessage{name, "No alerts met the criteria for removal", false}
 		return nil
 	}
 
@@ -240,11 +241,11 @@ func ClearAlert(lc chan<- LogMessage, name string, hdb *sql.DB, DeleteOlderDays 
 //but may also cause a minor IO penalty when new new log segments need to be created.  It is more important to run this function is an MDC
 //environemt than a non-MDC one.
 func ReclaimLog(lc chan<- LogMessage, name string, hdb *sql.DB, dryrun bool) error {
-	lc <- LogMessage{"name", "Starting reclaim log function", true}
+	lc <- LogMessage{name, "Starting reclaim log function", true}
 
 	var count uint
 	var bytes uint64
-	lc <- LogMessage{name, fmt.Sprintf("Running Query:%s", QUERY_GetFeeLogSegments), false}
+	lc <- LogMessage{name, fmt.Sprintf("Running Query:%s", QUERY_GetFeeLogSegments), true}
 	err := hdb.QueryRow(QUERY_GetFeeLogSegments).Scan(&count, &bytes)
 	switch {
 	case err == sql.ErrNoRows:
@@ -257,16 +258,81 @@ func ReclaimLog(lc chan<- LogMessage, name string, hdb *sql.DB, dryrun bool) err
 
 	lc <- LogMessage{name, fmt.Sprintf("Attempting to clear %d log segments saving %.2f MiB of disk space", count, float32(bytes/1024/1024)), false}
 
-	lc <- LogMessage{name, fmt.Sprintf("Running Query:%s", QUERY_RecalimLog), false}
-
 	if !dryrun {
+		lc <- LogMessage{name, fmt.Sprintf("Running Query:%s", QUERY_RecalimLog), true}
 		_, err = hdb.Exec(QUERY_RecalimLog)
 		if err != nil {
 			lc <- LogMessage{name, "Query produced a database error", false}
+			lc <- LogMessage{name, err.Error(), false}
 			return fmt.Errorf("db error")
 		}
 
 		lc <- LogMessage{name, "Log Reclaim was sucessful.", false}
+	}
+
+	return nil
+}
+
+//Function that removes old audit events from the audit table.
+func TruncateAuditLog(lc chan<- LogMessage, name string, hdb *sql.DB, daysToKeep uint, dryrun bool) error {
+
+	lc <- LogMessage{name, "Starting truncacte audit log function", true}
+
+	//Get the number of items to be removed
+	lc <- LogMessage{name, fmt.Sprintf("Attempting query:%s", GetAuditCount(daysToKeep)), true}
+	var auditCount uint
+	err := hdb.QueryRow(GetAuditCount(daysToKeep)).Scan(&auditCount)
+	switch {
+	case err == sql.ErrNoRows:
+		lc <- LogMessage{name, "No rows produced by query", false}
+		return fmt.Errorf("no results")
+	case err != nil:
+		lc <- LogMessage{name, "Query produced a database error", false}
+		return fmt.Errorf("db error")
+	}
+
+	switch {
+	case auditCount == 0:
+		lc <- LogMessage{name, "No audit records found that meet deletion criteria", false}
+		return nil
+	case auditCount == 1:
+		lc <- LogMessage{name, "1 audit record found that meet deletion criteria", false}
+	case auditCount > 1:
+		lc <- LogMessage{name, fmt.Sprintf("%d audit records found that meet deletion criteria", auditCount), false}
+	}
+
+	/*For whatever reason, HANA 2.0 SPS5 doesn't like taking a subquery as the timestamp argument
+	in the ALTER SYSTEM CLEAR AUDIT LOG UNIT .... command.
+	Therefore we need to pass the time argument in a string.  We don't want to use the local time as the DB could be differnt
+	So we'll run a query the DB for the time and feed it back in.*/
+	lc <- LogMessage{name, fmt.Sprintf("Executing Query:%s", GetDatetime(daysToKeep)), true}
+	var dateString string
+	err = hdb.QueryRow(GetDatetime(daysToKeep)).Scan(&dateString)
+	switch {
+	case err == sql.ErrNoRows:
+		lc <- LogMessage{name, "No rows produced by query", false}
+		return fmt.Errorf("no results")
+	case err != nil:
+		lc <- LogMessage{name, "Scan error or query produced a database error", false}
+		return fmt.Errorf("db error")
+	}
+
+	//Get rid of subseconds everything after and including the period
+	dateParts := strings.Split(dateString, ".")
+	/*ensure we have at least two elements in the array*/
+	if len(dateParts) != 2 {
+		lc <- LogMessage{name, fmt.Sprintf("The date string %s retrieved from the database couldn't be split to 2 parts.  Expect 2, got %d", dateString, len(dateParts)), false}
+		return fmt.Errorf("couldn't split string")
+	}
+
+	if !dryrun {
+		lc <- LogMessage{name, fmt.Sprintf("Executing Query:%s", GetTruncateAuditLog(dateParts[0])), true}
+		_, err = hdb.Exec(GetTruncateAuditLog(dateParts[0]))
+		if err != nil {
+			lc <- LogMessage{name, "Truncate audit log query failed", false}
+			lc <- LogMessage{name, err.Error(), true}
+			return fmt.Errorf("db error")
+		}
 	}
 
 	return nil

@@ -11,7 +11,7 @@ all of the DB queries are listed here and called from here*/
 const QUERY_GetVersion string = "SELECT VERSION FROM \"SYS\".\"M_DATABASE\""
 
 //Query to get the number of free log segments and their total size in bytes
-const QUERY_GetFeeLogSegments string = "SELECT COUNT(STATE) AS COUNT, SUM(TOTAL_SIZE) AS BYTES FROM SYS.M_LOG_SEGMENTS WHERE STATE = 'Free'"
+const QUERY_GetFeeLogSegments string = "SELECT COUNT(STATE) AS COUNT, COALESCE(SUM(TOTAL_SIZE),0) AS BYTES FROM SYS.M_LOG_SEGMENTS WHERE STATE = 'Free'"
 
 const QUERY_RecalimLog string = "ALTER SYSTEM RECLAIM LOG"
 
@@ -42,10 +42,10 @@ func GetBackupFileData(backupid string) string {
 		"B.ENTRY_TYPE_NAME AS ENTRY, "+
 		"COUNT(B.BACKUP_ID) AS COUNT, "+
 		"SUM(F.BACKUP_SIZE) AS BYTES "+
-		"FROM M_BACKUP_CATALOG AS B "+
-		"LEFT JOIN M_BACKUP_CATALOG_FILES AS F ON B.BACKUP_ID = F.BACKUP_ID "+
+		"FROM \"SYS\".\"M_BACKUP_CATALOG\" AS B "+
+		"LEFT JOIN \"SYS\".\"M_BACKUP_CATALOG_FILES\" AS F ON B.BACKUP_ID = F.BACKUP_ID "+
 		"WHERE B.BACKUP_ID < %s "+
-		"GROUP BY B.ENTRY_TYPE_NAME; ", backupid)
+		"GROUP BY B.ENTRY_TYPE_NAME", backupid)
 }
 
 func GetBackupDelete(backupid string) string {
@@ -63,3 +63,20 @@ func GetAlertCount(days uint) string {
 func GetAlertDelete(days uint) string {
 	return fmt.Sprintf("DELETE FROM \"_SYS_STATISTICS\".\"STATISTICS_ALERTS_BASE\" WHERE ALERT_TIMESTAMP < ADD_DAYS(NOW(), -%d)", days)
 }
+
+func GetAuditCount(days uint) string {
+	return fmt.Sprintf("SELECT COUNT(TIMESTAMP) AS COUNT FROM \"SYS\".\"AUDIT_LOG\" WHERE TIMESTAMP < (SELECT ADD_DAYS(NOW(), -%d) FROM DUMMY)", days)
+}
+
+//Function a string query the will return the historic datetime for now minus the number of days given in the arguement
+//Be aware, the returned string need to have subsecond element removed
+func GetDatetime(days uint) string {
+	return fmt.Sprintf("SELECT ADD_DAYS(NOW(), -%d) AS NOW FROM DUMMY", days)
+
+}
+
+func GetTruncateAuditLog(datetime string) string {
+	return fmt.Sprintf("ALTER SYSTEM CLEAR AUDIT LOG UNTIL '%s'", datetime)
+}
+
+//ALTER SYSTEM CLEAR AUDIT LOG UNTIL
