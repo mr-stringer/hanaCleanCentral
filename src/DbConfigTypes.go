@@ -22,6 +22,8 @@ type DbConfig struct {
 	ClearAlerts                bool   // If true, old alerts are removed from the embedded statistics server - Defaults to false
 	AlertsOlderDeleteDays      uint   // Specifies the number of days of alerts to retain
 	ReclaimLog                 bool   // If true, free log segments will be removed from the file system
+	TruncateAutitLog           bool   // If true, old audit records will be deleted
+	AuditLogRetainDays         uint   // Specifes the number of days of audit log to retain
 }
 
 func (hdb DbConfig) Dsn() string {

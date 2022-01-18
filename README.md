@@ -59,6 +59,8 @@ type DbConfig struct {
     ClearAlerts                bool   // If true, old alerts are removed from the embedded statistics server - Defaults to false
     AlertsOlderDeleteDays      uint   // Specifies the number of days of alerts to retain
     ReclaimLog                 bool   // If true, free log segments will be removed from the file system
+    TruncateAutitLog           bool   // If true, old audit records will be deleted
+    AuditLogRetainDays         uint   // Specifes the number of days of audit log to retain
 }
 ```
 
@@ -79,7 +81,9 @@ An example of a configuration file a single databases is provided below.
             "BackupCatalogRetentionDays": 60,
             "DeleteOldBackups": true,
             "ClearAlerts" :true,
-            "AlertsOlderDeleteDays": 60
+            "AlertsOlderDeleteDays": 60,
+            "TruncateAutitLog": true,
+            "AuditLogRetainDays": 60
         }
     ]
 }

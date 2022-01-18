@@ -99,11 +99,17 @@ func main() {
 		} else {
 			lc <- LogMessage{dbc.Name, "Skipping Reclaim Log", false}
 		}
+
+		if dbc.TruncateAutitLog {
+			err = TruncateAuditLog(lc, dbc.Name, db, dbc.AuditLogRetainDays, ac.DryRun)
+			if err != nil {
+				lc <- LogMessage{dbc.Name, "Failed to reclaim log space", false}
+			}
+		} else {
+			lc <- LogMessage{dbc.Name, "Skipping Reclaim Log", false}
+		}
 	}
 
 	/*flush and quit the logger*/
 	quit <- true
-	close(quit)
-	close(lc)
-
 }

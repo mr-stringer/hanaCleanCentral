@@ -13,7 +13,9 @@
             "DeleteOldBackups": false,
             "ClearAlerts": true,
             "AlertsOlderDeleteDays": 30,
-            "ReclaimLog": true
+            "ReclaimLog": true,
+            "TruncateAutitLog": true,
+            "AuditLogRetainDays": 60
         }
     ]
 }

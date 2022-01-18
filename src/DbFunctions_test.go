@@ -370,3 +370,96 @@ func TestReclaimLog(t *testing.T) {
 
 	quit <- true
 }
+
+func TestTruncateAuditLog(t *testing.T) {
+
+	db1, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	if err != nil {
+		t.Errorf("an error '%s' was not expected when opening mock database connection", err)
+	}
+	defer db1.Close()
+
+	lc := make(chan LogMessage)
+	quit := make(chan bool)
+
+	defer close(lc)
+	defer close(quit)
+
+	go Logger(AppConfig{"file", false, false}, lc, quit)
+	type args struct {
+		lc         chan<- LogMessage
+		name       string
+		hdb        *sql.DB
+		daysToKeep uint
+		dryrun     bool
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{"Good", args{lc, "db@sid", db1, 14, false}, false},
+		{"GoodOneRecordToDelete", args{lc, "db@sid", db1, 14, false}, false},
+		{"GoodNothingToDelete", args{lc, "db@sid", db1, 14, false}, false},
+		{"CountEventsNoRows", args{lc, "db@sid", db1, 14, false}, true},
+		{"CountEventsDbError", args{lc, "db@sid", db1, 14, false}, true},
+		{"GetDateNoRows", args{lc, "db@sid", db1, 14, false}, true},
+		{"GetDateDbError", args{lc, "db@sid", db1, 14, false}, true},
+		{"GetDateWrongFormat", args{lc, "db@sid", db1, 14, false}, true},
+		{"TruncateFailed", args{lc, "db@sid", db1, 14, false}, true},
+	}
+
+	for _, tt := range tests {
+
+		switch {
+		case tt.name == "Good":
+			rows1 := sqlmock.NewRows([]string{"COUNT"}).AddRow("10")
+			rows2 := sqlmock.NewRows([]string{"NOW"}).AddRow("2022-01-01 10:00:00.431000000")
+			mock.ExpectQuery(GetAuditCount(tt.args.daysToKeep)).WillReturnRows(rows1)
+			mock.ExpectQuery(GetDatetime(tt.args.daysToKeep)).WillReturnRows(rows2)
+			mock.ExpectExec(GetTruncateAuditLog("2022-01-01 10:00:00")).WillReturnResult(sqlmock.NewResult(0, 0))
+		case tt.name == "GoodOneRecordToDelete":
+			rows1 := sqlmock.NewRows([]string{"COUNT"}).AddRow("1")
+			rows2 := sqlmock.NewRows([]string{"NOW"}).AddRow("2022-01-01 10:00:00.431000000")
+			mock.ExpectQuery(GetAuditCount(tt.args.daysToKeep)).WillReturnRows(rows1)
+			mock.ExpectQuery(GetDatetime(tt.args.daysToKeep)).WillReturnRows(rows2)
+			mock.ExpectExec(GetTruncateAuditLog("2022-01-01 10:00:00")).WillReturnResult(sqlmock.NewResult(0, 0))
+		case tt.name == "GoodNothingToDelete":
+			rows1 := sqlmock.NewRows([]string{"COUNT"}).AddRow("0")
+			mock.ExpectQuery(GetAuditCount(tt.args.daysToKeep)).WillReturnRows(rows1)
+		case tt.name == "CountEventsNoRows":
+			rows1 := sqlmock.NewRows([]string{"COUNT"})
+			mock.ExpectQuery(GetAuditCount(tt.args.daysToKeep)).WillReturnRows(rows1)
+		case tt.name == "CountEventsDbError":
+			mock.ExpectQuery(GetAuditCount(tt.args.daysToKeep)).WillReturnError(fmt.Errorf("some db error"))
+		case tt.name == "GetDateNoRows":
+			rows1 := sqlmock.NewRows([]string{"COUNT"}).AddRow("10")
+			rows2 := sqlmock.NewRows([]string{"NOW"})
+			mock.ExpectQuery(GetAuditCount(tt.args.daysToKeep)).WillReturnRows(rows1)
+			mock.ExpectQuery(GetDatetime(tt.args.daysToKeep)).WillReturnRows(rows2)
+		case tt.name == "GetDateDbError":
+			rows1 := sqlmock.NewRows([]string{"COUNT"}).AddRow("10")
+			mock.ExpectQuery(GetAuditCount(tt.args.daysToKeep)).WillReturnRows(rows1)
+			mock.ExpectQuery(GetDatetime(tt.args.daysToKeep)).WillReturnError(fmt.Errorf("some db error"))
+		case tt.name == "GetDateWrongFormat":
+			rows1 := sqlmock.NewRows([]string{"COUNT"}).AddRow("10")
+			rows2 := sqlmock.NewRows([]string{"NOW"}).AddRow("2022-01-01 10:00:00.431000000.0000")
+			mock.ExpectQuery(GetAuditCount(tt.args.daysToKeep)).WillReturnRows(rows1)
+			mock.ExpectQuery(GetDatetime(tt.args.daysToKeep)).WillReturnRows(rows2)
+		case tt.name == "TruncateFailed":
+			rows1 := sqlmock.NewRows([]string{"COUNT"}).AddRow("10")
+			rows2 := sqlmock.NewRows([]string{"NOW"}).AddRow("2022-01-01 10:00:00.431000000")
+			mock.ExpectQuery(GetAuditCount(tt.args.daysToKeep)).WillReturnRows(rows1)
+			mock.ExpectQuery(GetDatetime(tt.args.daysToKeep)).WillReturnRows(rows2)
+			mock.ExpectExec(GetTruncateAuditLog("2022-01-01 10:00:00")).WillReturnError(fmt.Errorf("some db error"))
+		}
+
+		t.Run(tt.name, func(t *testing.T) {
+			if err := TruncateAuditLog(tt.args.lc, tt.args.name, tt.args.hdb, tt.args.daysToKeep, tt.args.dryrun); (err != nil) != tt.wantErr {
+				t.Errorf("TruncateAuditLog() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+
+	quit <- true
+}
