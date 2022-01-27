@@ -5,7 +5,6 @@
 	"RetainBackupCatalogDays" : 60,
 	"DeleteOldBackups": true,
 	"CleanAlerts": true,
-	"RetainAlertsDays" : 60,
 	"CleanLogVolume" : true,
 	"CleanAudit": true,
 	"RetainAuditDays": 60,

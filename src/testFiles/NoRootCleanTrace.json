@@ -1,6 +1,5 @@
 {
-    "CleanTrace": true,
-	"RetainTraceDays": 60,
+    "RetainTraceDays": 60,
 	"CleanBackupCatalog": true,
 	"RetainBackupCatalogDays" : 60,
 	"DeleteOldBackups": true,

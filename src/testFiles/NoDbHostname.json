@@ -12,7 +12,6 @@
     "Databases":[
         {
             "Name": "systemdb_TST",
-            "Hostname": "hanadb.mydomain.int",
             "Port": 30015,
             "Username": "sstringer",
             "Password": "ReallzyKoolPassw0rd"

@@ -13,8 +13,19 @@ type AppConfig struct {
 }
 
 //Top level configuration for hanaCleanCentral
+//All root config parameters must be set
 type Config struct {
-	Databases []DbConfig
+	CleanTrace              bool // If true, trace file management will be enabled
+	RetainTraceDays         uint // Specifies the number of days of trace files to retain
+	CleanBackupCatalog      bool // If true, backup catalog truncation will be enabled
+	RetainBackupCatalogDays uint // Specifies the number of days of entries to retain
+	DeleteOldBackups        bool // If true, truncated files will be physically removed, if false entries are removed from the database only
+	CleanAlerts             bool // If true, old alerts are removed from the embedded statistics server
+	RetainAlertsDays        uint // Specifies the number of days of alerts to retain
+	CleanLogVolume          bool // If true, free log segments will be removed from the file system
+	CleanAudit              bool // If true, old audit records will be deleted
+	RetainAuditDays         uint // Specifes the number of days of audit log to retain
+	Databases               []DbConfig
 }
 
 //Duplicate DB names are confusing at best and make it impossible to set

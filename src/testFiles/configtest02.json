@@ -1,37 +1,31 @@
 {
+    "CleanTrace": true,
+	"RetainTraceDays": 60,
+	"CleanBackupCatalog": true,
+	"RetainBackupCatalogDays" : 60,
+	"DeleteOldBackups": true,
+	"CleanAlerts": true,
+	"RetainAlertsDays" : 60,
+	"CleanLogVolume" : true,
+	"CleanAudit": true,
+	"RetainAuditDays": 60,
     "Databases":[
         {
-            "Name": "Test",
+            "Name": "systemdb_TST",
             "Hostname": "hanadb.mydomain.int",
             "Port": 30015,
             "Username": "sstringer",
-            "Password": "ReallzyKoolPassw0rd",
-            "RemoveTraces": true,
-            "TraceRetentionDays": 14,
-            "TruncateBackupCatalog": false,
-            "BackupCatalogRetentionDays": 0,
-            "DeleteOldBackups": false,
-            "ClearAlerts": true,
-            "AlertsOlderDeleteDays": 30,
-            "ReclaimLog": true,
-            "TruncateAutitLog": true,
-            "AuditLogRetainDays": 60
+            "Password": "ReallzyKoolPassw0rd"
         },
         {
-            "Name": "Prod",
-            "Hostname": "localhost",
-            "Port": 30040,
+            "Name": "Ten01_TST",
+            "Hostname": "hanadb.mydomain.int",
+            "Port": 30041,
             "Username": "sstringer",
-            "Password": "ZeroPasswordsRGUD",
-            "RemoveTraces": true,
-            "TraceRetentionDays": 14,
-            "TruncateBackupCatalog": true,
-            "BackupCatalogRetentionDays": 60,
-            "DeleteOldBackups": false,
-            "ClearAlerts": true,
-            "AlertsOlderDeleteDays": 30,
-            "ReclaimLog": false,
-            "TruncateAutitLog": false            
+            "Password": "ReallzyKoolPassw0rd",
+            "CleanAudit": false,
+	        "RetainAuditDays": 0
+
         }
     ]
 }

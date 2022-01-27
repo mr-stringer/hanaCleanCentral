@@ -2,7 +2,7 @@
     "CleanTrace": true,
 	"RetainTraceDays": 60,
 	"CleanBackupCatalog": true,
-	"RetainBackupCatalogDays" : 60,
+	"RetainBackupCatalogDays" : -60,
 	"DeleteOldBackups": true,
 	"CleanAlerts": true,
 	"RetainAlertsDays" : 60,

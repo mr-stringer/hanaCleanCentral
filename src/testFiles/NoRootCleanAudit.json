@@ -7,7 +7,6 @@
 	"CleanAlerts": true,
 	"RetainAlertsDays" : 60,
 	"CleanLogVolume" : true,
-	"CleanAudit": true,
 	"RetainAuditDays": 60,
     "Databases":[
         {
