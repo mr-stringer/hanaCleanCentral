@@ -41,10 +41,12 @@ func main() {
 	for _, dbc := range cnf.Databases {
 
 		/*Get password from environment if password not set*/
-		err = dbc.GetPasswordFromEnv()
-		if err != nil {
-			lc <- LogMessage{dbc.Name, "No password for DB in environment or config file, skipping this DB", false}
-			continue
+		if dbc.Password == "" {
+			err = dbc.GetPasswordFromEnv()
+			if err != nil {
+				lc <- LogMessage{dbc.Name, "No password for DB in environment or config file, skipping this DB", false}
+				continue
+			}
 		}
 
 		db, err := dbc.NewDb()
