@@ -8,8 +8,7 @@
 	"RetainAlertsDays" : 60,
 	"CleanLogVolume" : true,
 	"CleanAudit": true,
-	"RetainAuditDays": 60,
-    "Databases":[
+	"Databases":[
         {
             "Name": "systemdb_TST",
             "Hostname": "hanadb.mydomain.int",

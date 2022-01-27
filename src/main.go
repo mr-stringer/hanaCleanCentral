@@ -10,13 +10,20 @@ func main() {
 
 	ac := ProcessFlags()
 
+	/*Set up the logger*/
+	lc := make(chan LogMessage)
+	quit := make(chan bool)
+	defer close(lc)
+	defer close(quit)
+	go Logger(ac, lc, quit)
+
 	log.Printf("HanaCleanCentral initalising\n")
 	log.Printf("Configuration file = %s\n", ac.ConfigFile)
 	log.Printf("Verbose mode = %t\n", ac.Verbose)
 	log.Printf("Dryrun mode = %t\n", ac.DryRun)
 	log.Printf("Getting Config")
 
-	cnf, err := GetConfigFromFile(ac.ConfigFile)
+	cnf, err := GetConfigFromFile(lc, ac.ConfigFile)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -29,15 +36,6 @@ func main() {
 	}
 
 	log.Printf("Found a valid config for %d databases\n", len(cnf.Databases))
-
-	/*Set up the logger*/
-	lc := make(chan LogMessage)
-	quit := make(chan bool)
-
-	defer close(lc)
-	defer close(quit)
-
-	go Logger(ac, lc, quit)
 
 	//basic ranging over DBs found
 	for _, dbc := range cnf.Databases {
@@ -68,7 +66,7 @@ func main() {
 		}
 		log.Printf("%s:Hana Version found %s\n", dbc.Name, v)
 
-		err = TruncateTraceFiles(lc, dbc.Name, db, dbc.TraceRetentionDays, ac.DryRun)
+		err = TruncateTraceFiles(lc, dbc.Name, db, dbc.RetainTraceDays, ac.DryRun)
 		if err != nil {
 			log.Printf("%s:Error occured whilst trying to remove old tracesfiles", dbc.Name)
 			log.Printf("%s:Full error message:", dbc.Name)
@@ -77,13 +75,13 @@ func main() {
 			continue
 		}
 
-		err = TruncateBackupCatalog(lc, dbc.Name, db, dbc.BackupCatalogRetentionDays, dbc.DeleteOldBackups, ac.DryRun)
+		err = TruncateBackupCatalog(lc, dbc.Name, db, dbc.RetainBackupCatalogDays, dbc.DeleteOldBackups, ac.DryRun)
 		if err != nil {
 			log.Printf("%s:Backup catalog truncation failed", dbc.Name)
 		}
 
-		if dbc.ClearAlerts {
-			err = ClearAlert(lc, dbc.Name, db, dbc.AlertsOlderDeleteDays, ac.DryRun)
+		if dbc.CleanAlerts {
+			err = ClearAlert(lc, dbc.Name, db, dbc.RetainAlertsDays, ac.DryRun)
 			if err != nil {
 				lc <- LogMessage{dbc.Name, "Failed to clear old alerts", false}
 			}
@@ -91,7 +89,7 @@ func main() {
 			lc <- LogMessage{dbc.Name, "Skipping alert clearing", false}
 		}
 
-		if dbc.ReclaimLog {
+		if dbc.CleanLogVolume {
 			err = ReclaimLog(lc, dbc.Name, db, ac.DryRun)
 			if err != nil {
 				lc <- LogMessage{dbc.Name, "Failed to reclaim log space", false}
@@ -100,8 +98,8 @@ func main() {
 			lc <- LogMessage{dbc.Name, "Skipping Reclaim Log", false}
 		}
 
-		if dbc.TruncateAutitLog {
-			err = TruncateAuditLog(lc, dbc.Name, db, dbc.AuditLogRetainDays, ac.DryRun)
+		if dbc.CleanAudit {
+			err = TruncateAuditLog(lc, dbc.Name, db, dbc.RetainAuditDays, ac.DryRun)
 			if err != nil {
 				lc <- LogMessage{dbc.Name, "Failed to reclaim log space", false}
 			}

@@ -163,6 +163,8 @@ func TestTruncateBackupCatalog(t *testing.T) {
 
 	lc := make(chan LogMessage)
 	quit := make(chan bool)
+	defer close(lc)
+	defer close(quit)
 	go Logger(AppConfig{"file", false, false}, lc, quit)
 
 	type args struct {
@@ -243,6 +245,7 @@ func TestTruncateBackupCatalog(t *testing.T) {
 			}
 		})
 	}
+	quit <- true
 }
 
 func TestClearAlert(t *testing.T) {

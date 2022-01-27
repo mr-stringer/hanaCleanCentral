@@ -1,0 +1,31 @@
+{
+    "CleanTrace": false,
+	"RetainTraceDays": 0,
+	"CleanBackupCatalog": false,
+	"RetainBackupCatalogDays" : 0,
+	"DeleteOldBackups": false,
+	"CleanAlerts": false,
+	"RetainAlertsDays" : 0,
+	"CleanLogVolume" : false,
+	"CleanAudit": false,
+	"RetainAuditDays": 0,
+    "Databases":[
+        {
+            "Name": "systemdb_TST",
+            "Hostname": "hanadb.mydomain.int",
+            "Port": 30015,
+            "Username": "sstringer",
+            "Password": "ReallzyKoolPassw0rd",
+            "CleanTrace": true,
+	        "RetainTraceDays": 30,
+	        "CleanBackupCatalog": true,
+	        "RetainBackupCatalogDays" : 30,
+	        "DeleteOldBackups": true,
+	        "CleanAlerts": true,
+	        "RetainAlertsDays" : 30,
+	        "CleanLogVolume" : true,
+	        "CleanAudit": true,
+	        "RetainAuditDays": 30
+        }
+    ]
+}
