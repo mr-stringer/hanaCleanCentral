@@ -58,7 +58,7 @@ func main() {
 			continue
 		}
 
-		v, err := HanaVersion(db)
+		v, err := HanaVersion(dbc.Name, lc, db)
 		if err != nil {
 			log.Printf("%s:Could not get HANA version of configured database\n", dbc.Name)
 			log.Printf("%s:Full error message:", dbc.Name)

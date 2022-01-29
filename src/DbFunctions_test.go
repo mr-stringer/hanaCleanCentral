@@ -16,8 +16,16 @@ func TestHanaVersion(t *testing.T) {
 	}
 	defer db1.Close()
 
+	lc := make(chan LogMessage)
+	quit := make(chan bool)
+	go Logger(AppConfig{"file", true, false}, lc, quit)
+
+	var name string = "test_tst"
+
 	type args struct {
-		hdb *sql.DB
+		name string
+		lc   chan<- LogMessage
+		hdb  *sql.DB
 	}
 	tests := []struct {
 		name    string
@@ -25,10 +33,10 @@ func TestHanaVersion(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{"Good001", args{db1}, "2.00.45.00", false},
-		{"Good002", args{db1}, "2.00.044.00.1571081837", false},
-		{"Good003", args{db1}, "1.00.044.00.1571081837", false},
-		{"Error001", args{db1}, "", true},
+		{"Good001", args{name, lc, db1}, "2.00.45.00", false},
+		{"Good002", args{name, lc, db1}, "2.00.044.00.1571081837", false},
+		{"Good003", args{name, lc, db1}, "1.00.044.00.1571081837", false},
+		{"Error001", args{name, lc, db1}, "", true},
 	}
 	for _, tt := range tests {
 
@@ -41,7 +49,7 @@ func TestHanaVersion(t *testing.T) {
 		}
 
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := HanaVersion(tt.args.hdb)
+			got, err := HanaVersion(tt.args.name, tt.args.lc, tt.args.hdb)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("HanaVersion() error = %v, wantErr %v", err, tt.wantErr)
 				return
