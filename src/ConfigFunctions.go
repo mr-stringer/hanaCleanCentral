@@ -123,6 +123,12 @@ func GetConfigFromFile(lc chan<- LogMessage, path string) (*Config, error) {
 	}
 	cnf.RetainAuditDays = uint(tf)
 
+	cnf.CleanDataVolume, ok = jp.Path("CleanDataVolume").Data().(bool)
+	if !ok {
+		lc <- LogMessage{"HccConfig", "Could not parse 'CleanDataVolume', all root parameters must be set.  Cannot continue", false}
+		return &mt, fmt.Errorf("config error")
+	}
+
 	/*Now iterate over DBs*/
 	for k, child := range jp.S("Databases").Children() {
 		//Create an struct instance
@@ -246,6 +252,12 @@ func GetConfigFromFile(lc chan<- LogMessage, path string) (*Config, error) {
 			return &mt, fmt.Errorf("config error")
 		} else {
 			db.RetainAuditDays = uint(tf)
+		}
+
+		db.CleanDataVolume, ok = child.Path("CleanDataVolume").Data().(bool)
+		if !ok {
+			lc <- LogMessage{"HccConfig", fmt.Sprintf("Cannot parse 'CleanDataVolume' for DB config %d.  Will inherit from %v from root config", k, cnf.CleanAudit), true}
+			db.CleanDataVolume = cnf.CleanDataVolume
 		}
 
 		//append to slice

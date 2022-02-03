@@ -24,6 +24,7 @@ type DbConfig struct {
 	CleanLogVolume          bool   // If true, free log segments will be removed from the file system
 	CleanAudit              bool   // If true, old audit records will be deleted
 	RetainAuditDays         uint   // Specifes the number of days of audit log to retain
+	CleanDataVolume         bool   // If true, the data volume will be defragemented, currently uses default size of 120
 }
 
 func (hdb DbConfig) Dsn() string {

@@ -8,6 +8,7 @@
 	"RetainAlertsDays" : 60,
 	"CleanAudit": true,
 	"RetainAuditDays": 60,
+    "CleanDataVolume": true,
     "Databases":[
         {
             "Name": "systemdb_TST",

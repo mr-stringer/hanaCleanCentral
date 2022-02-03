@@ -9,6 +9,7 @@
 	"CleanLogVolume" : false,
 	"CleanAudit": false,
 	"RetainAuditDays": 0,
+	"CleanDataVolume": true,
     "Databases":[
         {
             "Name": "systemdb_TST",
@@ -25,7 +26,8 @@
 	        "RetainAlertsDays" : 30,
 	        "CleanLogVolume" : true,
 	        "CleanAudit": true,
-	        "RetainAuditDays": 30
+	        "RetainAuditDays": 30,
+			"CleanDataVolume": true
         }
     ]
 }

@@ -9,9 +9,9 @@ func TestConfig_CheckForDupeNames(t *testing.T) {
 		c       *Config
 		wantErr bool
 	}{
-		{"Good_SingleDB", &Config{true, 60, true, 60, true, true, 60, true, true, 60, []DbConfig{{"systemdb_TST", "hanadb.mydomain.int", 30015, "hccuser", "ReallzyKoolPassw0rd", true, 60, true, 60, true, true, 60, true, true, 60}}}, false},
-		{"Good_TwoDBs", &Config{true, 60, true, 60, true, true, 60, true, true, 60, []DbConfig{{"systemdb_TST", "hanadb.mydomain.int", 30015, "hccuser", "ReallzyKoolPassw0rd", true, 60, true, 60, true, true, 60, true, true, 60}, {"ten1_TST", "hanadb.mydomain.int", 30041, "hccuser", "ReallzyKoolPassw0rd", false, 0, false, 0, true, true, 90, false, true, 30}}}, false},
-		{"Err_IndenticalNames", &Config{true, 60, true, 60, true, true, 60, true, true, 60, []DbConfig{{"database", "hanadb.mydomain.int", 30015, "hccuser", "ReallzyKoolPassw0rd", true, 60, true, 60, true, true, 60, true, true, 60}, {"database", "hanadb.mydomain.int", 30041, "hccuser", "ReallzyKoolPassw0rd", false, 0, false, 0, true, true, 90, false, true, 30}}}, true},
+		{"Good_SingleDB", &Config{true, 60, true, 60, true, true, 60, true, true, 60, true, []DbConfig{{"systemdb_TST", "hanadb.mydomain.int", 30015, "hccuser", "ReallzyKoolPassw0rd", true, 60, true, 60, true, true, 60, true, true, 60, true}}}, false},
+		{"Good_TwoDBs", &Config{true, 60, true, 60, true, true, 60, true, true, 60, true, []DbConfig{{"systemdb_TST", "hanadb.mydomain.int", 30015, "hccuser", "ReallzyKoolPassw0rd", true, 60, true, 60, true, true, 60, true, true, 60, true}, {"ten1_TST", "hanadb.mydomain.int", 30041, "hccuser", "ReallzyKoolPassw0rd", false, 0, false, 0, true, true, 90, false, true, 30, true}}}, false},
+		{"Err_IndenticalNames", &Config{true, 60, true, 60, true, true, 60, true, true, 60, true, []DbConfig{{"database", "hanadb.mydomain.int", 30015, "hccuser", "ReallzyKoolPassw0rd", true, 60, true, 60, true, true, 60, true, true, 60, true}, {"database", "hanadb.mydomain.int", 30041, "hccuser", "ReallzyKoolPassw0rd", false, 0, false, 0, true, true, 90, false, true, 30, true}}}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
