@@ -25,6 +25,7 @@ func main() {
 
 	cnf, err := GetConfigFromFile(lc, ac.ConfigFile)
 	if err != nil {
+		quit <- true
 		log.Fatal(err)
 	}
 
@@ -107,6 +108,15 @@ func main() {
 			}
 		} else {
 			lc <- LogMessage{dbc.Name, "Skipping Reclaim Log", false}
+		}
+
+		if dbc.CleanDataVolume {
+			err = CleanDataVolume(lc, dbc.Name, db, ac.DryRun)
+			if err != nil {
+				lc <- LogMessage{dbc.Name, "One or more errors occured during data volume cleaning", false}
+			}
+		} else {
+			lc <- LogMessage{dbc.Name, "Skipping Clean Data Volume", false}
 		}
 	}
 
