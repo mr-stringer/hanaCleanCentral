@@ -372,3 +372,83 @@ func TruncateAuditLog(lc chan<- LogMessage, name string, hdb *sql.DB, daysToKeep
 
 	return nil
 }
+
+func CleanDataVolume(lc chan<- LogMessage, name string, hdb *sql.DB, dryrun bool) error {
+	fname := fmt.Sprintf("%s:%s", name, "CleanDataVolume")
+	lc <- LogMessage{fname, "Starting", true}
+	if dryrun {
+		lc <- LogMessage{fname, "Dry run enabled, no changes will be made", false}
+	}
+
+	/*Get the information about each datavolume*/
+	rows, err := hdb.Query(QUERY_GetDataVolume)
+	if err != nil {
+		lc <- LogMessage{fname, "Query Failed", true}
+		lc <- LogMessage{fname, err.Error(), true}
+		return err
+	}
+	defer rows.Close()
+
+	dvs := make([]DataVolume, 0)
+
+	for rows.Next() {
+		dv := DataVolume{}
+		err := rows.Scan(&dv.Host, &dv.Port, &dv.UsedSizeBytes, &dv.TotalSizeBytes)
+		if err != nil {
+			lc <- LogMessage{fname, "Scan Error", true}
+			lc <- LogMessage{fname, err.Error(), true}
+			/*allow calling function to deal with the error*/
+			return err
+		}
+		dvs = append(dvs, dv)
+	}
+
+	count := len(dvs)
+	switch {
+	case count == 0:
+		lc <- LogMessage{fname, "No data volumes found", true}
+		return nil /*Should this be an error?  It may be possible for some form of tenant to exisit without data volumes*/
+	case count == 1:
+		lc <- LogMessage{fname, "1 data volume found", true}
+	default:
+		lc <- LogMessage{fname, fmt.Sprintf("%d data volumes found", count), true}
+	}
+
+	var failures = 0
+
+	for k, v := range dvs {
+		lc <- LogMessage{fname, fmt.Sprintf("Processing data volume %d of %d", k+1, len(dvs)), true}
+		if !v.CleanNeeded() {
+			lc <- LogMessage{fname, "Cleaning not requried, data volume is less than 50% whitespace", true}
+			continue
+		} else {
+			if dryrun {
+				lc <- LogMessage{fname, "Cleaning requried, but skipping due to dry run mode", true}
+				continue
+			} else {
+				lc <- LogMessage{fname, "Cleaning requried, data volume is more than 50% whitespace", true}
+				_, err = hdb.Exec(GetCleanDataVolume(v.Host, v.Port))
+				if err != nil {
+					lc <- LogMessage{fname, "Failed to clean data volume", false}
+					lc <- LogMessage{fname, err.Error(), true}
+					failures += 1
+				} else {
+					lc <- LogMessage{fname, "Clean data volume OK", true}
+				}
+			}
+		}
+	}
+
+	/*choose an exit*/
+	switch {
+	case failures == 0:
+		lc <- LogMessage{fname, "Clean data volume finished with no errors", false}
+		return nil
+	case failures == 1:
+		lc <- LogMessage{fname, "Clean data volume finished with one error", false}
+		return fmt.Errorf("one data volume clean error recorded")
+	default:
+		lc <- LogMessage{fname, fmt.Sprintf("Clean data volume finished with %d errors", failures), false}
+		return fmt.Errorf("%d data volume clean errors recorded", failures)
+	}
+}

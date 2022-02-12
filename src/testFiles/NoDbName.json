@@ -9,6 +9,7 @@
 	"CleanLogVolume" : true,
 	"CleanAudit": true,
 	"RetainAuditDays": 60,
+    "CleanDataVolume": true,
     "Databases":[
         {
             "Hostname": "hanadb.mydomain.int",

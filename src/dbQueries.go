@@ -15,6 +15,9 @@ const QUERY_GetFeeLogSegments string = "SELECT COUNT(STATE) AS COUNT, COALESCE(S
 
 const QUERY_RecalimLog string = "ALTER SYSTEM RECLAIM LOG"
 
+//Query to get the used and total space from each data volume.
+const QUERY_GetDataVolume string = "SELECT HOST, PORT, USED_SIZE, TOTAL_SIZE FROM SYS.M_VOLUME_FILES WHERE FILE_TYPE = 'DATA'"
+
 //The function returns a string which is used to query the HANA dataase. The function takes the argument days, this argument is used in the query to define the age of tracefiles
 //that should be returned.  If the days is set to one, only tracefiles that have not been modified in the last 24 hours will be retutned.  In addition, they query will only return
 //tracefiles that end "trc" or "gz".  This may change in the future but right now "gz" and "trc" are considered safe for housekeeping.
@@ -75,8 +78,12 @@ func GetDatetime(days uint) string {
 
 }
 
+//Function that returns a query that can is used to clear the audit log to the given datetime
 func GetTruncateAuditLog(datetime string) string {
 	return fmt.Sprintf("ALTER SYSTEM CLEAR AUDIT LOG UNTIL '%s'", datetime)
 }
 
-//ALTER SYSTEM CLEAR AUDIT LOG UNTIL
+//Function that returns a query that is used to clean (defragment) HANA data volumes.  Must specifiy hostname and port
+func GetCleanDataVolume(host string, port uint) string {
+	return fmt.Sprintf("ALTER SYSTEM RECLAIM DATAVOLUME '%s:%d' 120 DEFRAGMENT", host, port)
+}
