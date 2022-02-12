@@ -26,5 +26,5 @@ type DataVolume struct {
 }
 
 func (d DataVolume) CleanNeeded() bool {
-	return d.UsedSizeBytes/d.TotalSizeBytes*100 > 50
+	return float32(d.UsedSizeBytes)/float32(d.TotalSizeBytes)*100 < 50
 }
