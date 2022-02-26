@@ -15,7 +15,7 @@
             "Name": "systemdb_TST",
             "Hostname": "hanadb.mydomain.int",
             "Port": 30015,
-            "Password": "ReallzyKoolPassw0rd"
+            "Password": "ReallyCoolPassw0rd"
         }
     ]
 }

@@ -40,7 +40,7 @@ func TruncateTraceFiles(lc chan<- LogMessage, name string, hdb *sql.DB, TrncDays
 		return nil
 	}
 
-	/*slilc <- LogMessage{name, "Attempting tracefile truncation", true}
+	/*slice <- LogMessage{name, "Attempting tracefile truncation", true}
 	ce to hold results*/
 	TraceFiles := make([]TraceFile, 0)
 
@@ -108,7 +108,7 @@ func TruncateTraceFiles(lc chan<- LogMessage, name string, hdb *sql.DB, TrncDays
 				continue /*try the next one*/
 			default:
 				if tracePresent == 0 {
-					lc <- LogMessage{fname, fmt.Sprintf("Sucessfully removed trace file %s", v.TraceFile), true}
+					lc <- LogMessage{fname, fmt.Sprintf("Successfully removed trace file %s", v.TraceFile), true}
 				} else { /*for trace files we should only ever see 0 or 1*/
 					lc <- LogMessage{fname, fmt.Sprintf("Tracefile %s was not removed", v.TraceFile), true}
 					continue
@@ -149,12 +149,12 @@ func TruncateBackupCatalog(lc chan<- LogMessage, name string, hdb *sql.DB, TrncD
 		lc <- LogMessage{fname, "No backupID found which matches the criteria", false}
 		return nil
 	case err != nil:
-		lc <- LogMessage{fname, "An error occured querying the database", false}
+		lc <- LogMessage{fname, "An error occurred querying the database", false}
 		lc <- LogMessage{fname, err.Error(), true}
 		return fmt.Errorf("query error")
 
 	default:
-		lc <- LogMessage{fname, fmt.Sprintf("Found recent backupID (%s) that meets the serach criteria", backupID), true}
+		lc <- LogMessage{fname, fmt.Sprintf("Found recent backupID (%s) that meets the search criteria", backupID), true}
 	}
 
 	/*Count how many backups will be deleted*/
@@ -162,7 +162,7 @@ func TruncateBackupCatalog(lc chan<- LogMessage, name string, hdb *sql.DB, TrncD
 	lc <- LogMessage{fname, fmt.Sprintf("Performing Query: %s", GetBackupFileData(backupID)), true}
 	rows, err := hdb.Query(GetBackupFileData(backupID))
 	if err != nil {
-		lc <- LogMessage{fname, "An error occured querying the database", false}
+		lc <- LogMessage{fname, "An error occurred querying the database", false}
 		lc <- LogMessage{fname, err.Error(), true}
 		return fmt.Errorf("failed to retrieve data on backup catalog entries to remove")
 	}
@@ -171,7 +171,7 @@ func TruncateBackupCatalog(lc chan<- LogMessage, name string, hdb *sql.DB, TrncD
 		bf := BackupFiles{}
 		err := rows.Scan(&bf.EntryType, &bf.FileCount, &bf.Bytes) //need unit test here!
 		if err != nil {
-			lc <- LogMessage{fname, "An error occured querying the database", false}
+			lc <- LogMessage{fname, "An error occurred querying the database", false}
 			lc <- LogMessage{fname, err.Error(), true}
 		}
 		bfs = append(bfs, bf)
@@ -212,7 +212,7 @@ func TruncateBackupCatalog(lc chan<- LogMessage, name string, hdb *sql.DB, TrncD
 			return fmt.Errorf("couldn't clean backup catalog")
 		}
 
-		lc <- LogMessage{fname, "Backup catalog sucessfully cleaned", false}
+		lc <- LogMessage{fname, "Backup catalog successfully cleaned", false}
 	}
 	return nil
 }
@@ -225,7 +225,7 @@ func ClearAlert(lc chan<- LogMessage, name string, hdb *sql.DB, DeleteOlderDays 
 	if dryrun {
 		lc <- LogMessage{fname, "Dry run enabled, no changes will be made", false}
 	}
-	/*Find how many alerts there are that match the deltion criteria*/
+	/*Find how many alerts there are that match the deletion criteria*/
 	var ac uint
 	lc <- LogMessage{fname, fmt.Sprintf("Performing query:%s", GetAlertCount(DeleteOlderDays)), true}
 	err := hdb.QueryRow(GetAlertCount(DeleteOlderDays)).Scan(&ac)
@@ -256,7 +256,7 @@ func ClearAlert(lc chan<- LogMessage, name string, hdb *sql.DB, DeleteOlderDays 
 			lc <- LogMessage{name, err.Error(), true}
 			return err
 		}
-		lc <- LogMessage{name, fmt.Sprintf("Sucessfully deleted %d alerts", ac), false}
+		lc <- LogMessage{name, fmt.Sprintf("Successfully deleted %d alerts", ac), false}
 	}
 	return nil
 }
@@ -288,15 +288,15 @@ func ReclaimLog(lc chan<- LogMessage, name string, hdb *sql.DB, dryrun bool) err
 	lc <- LogMessage{fname, fmt.Sprintf("Attempting to clear %d log segments saving %.2f MiB of disk space", count, float32(bytes/1024/1024)), true}
 
 	if !dryrun {
-		lc <- LogMessage{fname, fmt.Sprintf("Performing Query:%s", QUERY_RecalimLog), true}
-		_, err = hdb.Exec(QUERY_RecalimLog)
+		lc <- LogMessage{fname, fmt.Sprintf("Performing Query:%s", QUERY_ReclaimLog), true}
+		_, err = hdb.Exec(QUERY_ReclaimLog)
 		if err != nil {
 			lc <- LogMessage{fname, "Query produced a database error", false}
 			lc <- LogMessage{fname, err.Error(), true}
 			return fmt.Errorf("db error")
 		}
 
-		lc <- LogMessage{fname, "Log Reclaim was sucessful.", false}
+		lc <- LogMessage{fname, "Log Reclaim was successful.", false}
 	}
 
 	return nil
@@ -337,7 +337,7 @@ func TruncateAuditLog(lc chan<- LogMessage, name string, hdb *sql.DB, daysToKeep
 
 	/*For whatever reason, HANA 2.0 SPS5 doesn't like taking a subquery as the timestamp argument
 	in the ALTER SYSTEM CLEAR AUDIT LOG UNIT .... command.
-	Therefore we need to pass the time argument in a string.  We don't want to use the local time as the DB could be differnt
+	Therefore we need to pass the time argument in a string.  We don't want to use the local time as the DB could be different
 	So we'll run a query the DB for the time and feed it back in.*/
 	lc <- LogMessage{fname, fmt.Sprintf("Performing Query:%s", GetDatetime(daysToKeep)), true}
 	var dateString string
@@ -407,7 +407,7 @@ func CleanDataVolume(lc chan<- LogMessage, name string, hdb *sql.DB, dryrun bool
 	switch {
 	case count == 0:
 		lc <- LogMessage{fname, "No data volumes found", true}
-		return nil /*Should this be an error?  It may be possible for some form of tenant to exisit without data volumes*/
+		return nil /*Should this be an error?  It may be possible for some form of tenant to exist without data volumes*/
 	case count == 1:
 		lc <- LogMessage{fname, "1 data volume found", true}
 	default:
@@ -419,14 +419,14 @@ func CleanDataVolume(lc chan<- LogMessage, name string, hdb *sql.DB, dryrun bool
 	for k, v := range dvs {
 		lc <- LogMessage{fname, fmt.Sprintf("Processing data volume %d of %d", k+1, len(dvs)), true}
 		if !v.CleanNeeded() {
-			lc <- LogMessage{fname, "Cleaning not requried, data volume is less than 50% whitespace", true}
+			lc <- LogMessage{fname, "Cleaning not required, data volume is less than 50% whitespace", true}
 			continue
 		} else {
 			if dryrun {
-				lc <- LogMessage{fname, "Cleaning requried, but skipping due to dry run mode", true}
+				lc <- LogMessage{fname, "Cleaning required, but skipping due to dry run mode", true}
 				continue
 			} else {
-				lc <- LogMessage{fname, "Cleaning requried, data volume is more than 50% whitespace", true}
+				lc <- LogMessage{fname, "Cleaning required, data volume is more than 50% whitespace", true}
 				_, err = hdb.Exec(GetCleanDataVolume(v.Host, v.Port))
 				if err != nil {
 					lc <- LogMessage{fname, "Failed to clean data volume", false}
