@@ -360,7 +360,7 @@ func TestReclaimLog(t *testing.T) {
 		case tt.name == "Good":
 			rows1 := sqlmock.NewRows([]string{"COUNT", "BYTES"}).AddRow("10", "2048000")
 			mock.ExpectQuery(QUERY_GetFeeLogSegments).WillReturnRows(rows1)
-			mock.ExpectExec(QUERY_RecalimLog).WillReturnResult(sqlmock.NewResult(1, 1))
+			mock.ExpectExec(QUERY_ReclaimLog).WillReturnResult(sqlmock.NewResult(1, 1))
 		case tt.name == "GetSegmentsDbError":
 			rows1 := sqlmock.NewRows([]string{"COUNT", "BYTES"})
 			mock.ExpectQuery(QUERY_GetFeeLogSegments).WillReturnRows(rows1)
@@ -369,7 +369,7 @@ func TestReclaimLog(t *testing.T) {
 		case tt.name == "ReclaimLogDbError":
 			rows1 := sqlmock.NewRows([]string{"COUNT", "BYTES"}).AddRow("10", "2048000")
 			mock.ExpectQuery(QUERY_GetFeeLogSegments).WillReturnRows(rows1)
-			mock.ExpectExec(QUERY_RecalimLog).WillReturnError(fmt.Errorf("some DB error"))
+			mock.ExpectExec(QUERY_ReclaimLog).WillReturnError(fmt.Errorf("some DB error"))
 		}
 
 		t.Run(tt.name, func(t *testing.T) {

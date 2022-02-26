@@ -16,14 +16,14 @@
             "Hostname": "hanadb.mydomain.int",
             "Port": 30015,
             "Username": "sstringer",
-            "Password": "ReallzyKoolPassw0rd"
+            "Password": "ReallyCoolPassw0rd"
         },
         {
             "Name": "Ten01_TST",
             "Hostname": "hanadb.mydomain.int",
             "Port": 30041,
             "Username": "sstringer",
-            "Password": "ReallzyKoolPassw0rd",
+            "Password": "ReallyCoolPassw0rd",
             "CleanAudit": false,
 	        "RetainAuditDays": 0
 
