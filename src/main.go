@@ -50,7 +50,7 @@ func main() {
 			}
 		}
 
-		db, err := dbc.NewDb()
+		err := dbc.NewDb()
 		if err != nil {
 			log.Printf("%s:Could not connect to configured database\n", dbc.Name)
 			log.Printf("%s:Check the configuration details and try again.  Full error message:", dbc.Name)
@@ -59,7 +59,7 @@ func main() {
 			continue
 		}
 
-		v, err := HanaVersion(dbc.Name, lc, db)
+		v, err := dbc.HanaVersionFunc(lc)
 		if err != nil {
 			log.Printf("%s:Could not get HANA version of configured database\n", dbc.Name)
 			log.Printf("%s:Full error message:", dbc.Name)
@@ -69,57 +69,57 @@ func main() {
 		}
 		log.Printf("%s:Hana Version found %s\n", dbc.Name, v)
 
-		err = TruncateTraceFiles(lc, dbc.Name, db, dbc.RetainTraceDays, ac.DryRun)
-		if err != nil {
-			log.Printf("%s:Error occured whilst trying to remove old tracesfiles", dbc.Name)
-			log.Printf("%s:Full error message:", dbc.Name)
-			log.Print(err.Error())
-			log.Printf("%s:Will not process any tasks for this databases\n", dbc.Name)
-			continue
-		}
-
-		err = TruncateBackupCatalog(lc, dbc.Name, db, dbc.RetainBackupCatalogDays, dbc.DeleteOldBackups, ac.DryRun)
-		if err != nil {
-			log.Printf("%s:Backup catalog truncation failed", dbc.Name)
-		}
-
-		if dbc.CleanAlerts {
-			err = ClearAlert(lc, dbc.Name, db, dbc.RetainAlertsDays, ac.DryRun)
-			if err != nil {
-				lc <- LogMessage{dbc.Name, "Failed to clear old alerts", false}
-			}
-		} else {
-			lc <- LogMessage{dbc.Name, "Skipping alert clearing", false}
-		}
-
-		if dbc.CleanLogVolume {
-			err = ReclaimLog(lc, dbc.Name, db, ac.DryRun)
-			if err != nil {
-				lc <- LogMessage{dbc.Name, "Failed to reclaim log space", false}
-			}
-		} else {
-			lc <- LogMessage{dbc.Name, "Skipping Reclaim Log", false}
-		}
-
-		if dbc.CleanAudit {
-			err = TruncateAuditLog(lc, dbc.Name, db, dbc.RetainAuditDays, ac.DryRun)
-			if err != nil {
-				lc <- LogMessage{dbc.Name, "Failed to reclaim log space", false}
-			}
-		} else {
-			lc <- LogMessage{dbc.Name, "Skipping Reclaim Log", false}
-		}
-
-		if dbc.CleanDataVolume {
-			err = CleanDataVolume(lc, dbc.Name, db, ac.DryRun)
-			if err != nil {
-				lc <- LogMessage{dbc.Name, "One or more errors occured during data volume cleaning", false}
-			}
-		} else {
-			lc <- LogMessage{dbc.Name, "Skipping Clean Data Volume", false}
-		}
+		//	err = TruncateTraceFiles(lc, dbc.Name, db, dbc.RetainTraceDays, ac.DryRun)
+		//	if err != nil {
+		//		log.Printf("%s:Error occurred whilst trying to remove old tracesfiles", dbc.Name)
+		//		log.Printf("%s:Full error message:", dbc.Name)
+		//		log.Print(err.Error())
+		//		log.Printf("%s:Will not process any tasks for this databases\n", dbc.Name)
+		//		continue
+		//	}
+		//
+		//	err = TruncateBackupCatalog(lc, dbc.Name, db, dbc.RetainBackupCatalogDays, dbc.DeleteOldBackups, ac.DryRun)
+		//	if err != nil {
+		//		log.Printf("%s:Backup catalog truncation failed", dbc.Name)
+		//	}
+		//
+		//	if dbc.CleanAlerts {
+		//		err = ClearAlert(lc, dbc.Name, db, dbc.RetainAlertsDays, ac.DryRun)
+		//		if err != nil {
+		//			lc <- LogMessage{dbc.Name, "Failed to clear old alerts", false}
+		//		}
+		//	} else {
+		//		lc <- LogMessage{dbc.Name, "Skipping alert clearing", false}
+		//	}
+		//
+		//	if dbc.CleanLogVolume {
+		//		err = ReclaimLog(lc, dbc.Name, db, ac.DryRun)
+		//		if err != nil {
+		//			lc <- LogMessage{dbc.Name, "Failed to reclaim log space", false}
+		//		}
+		//	} else {
+		//		lc <- LogMessage{dbc.Name, "Skipping Reclaim Log", false}
+		//	}
+		//
+		//	if dbc.CleanAudit {
+		//		err = TruncateAuditLog(lc, dbc.Name, db, dbc.RetainAuditDays, ac.DryRun)
+		//		if err != nil {
+		//			lc <- LogMessage{dbc.Name, "Failed to reclaim log space", false}
+		//		}
+		//	} else {
+		//		lc <- LogMessage{dbc.Name, "Skipping Reclaim Log", false}
+		//	}
+		//
+		//	if dbc.CleanDataVolume {
+		//		err = CleanDataVolume(lc, dbc.Name, db, ac.DryRun)
+		//		if err != nil {
+		//			lc <- LogMessage{dbc.Name, "One or more errors occurred during data volume cleaning", false}
+		//		}
+		//	} else {
+		//		lc <- LogMessage{dbc.Name, "Skipping Clean Data Volume", false}
+		//	}
 	}
-
-	/*flush and quit the logger*/
+	//
+	///*flush and quit the logger*/
 	quit <- true
 }

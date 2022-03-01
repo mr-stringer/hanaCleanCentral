@@ -24,8 +24,8 @@ func TestGetConfigFromFile(t *testing.T) {
 		want    *Config
 		wantErr bool
 	}{
-		{"GoodFile01", args{lc, "testFiles/configtest01.json"}, &Config{true, 60, true, 60, true, true, 60, true, true, 60, true, []DbConfig{{"systemdb_TST", "hanadb.mydomain.int", 30015, "sstringer", "ReallyCoolPassw0rd", true, 60, true, 60, true, true, 60, true, true, 60, true}}}, false},
-		{"GoodFile02", args{lc, "testFiles/configtest02.json"}, &Config{true, 60, true, 60, true, true, 60, true, true, 60, true, []DbConfig{{"systemdb_TST", "hanadb.mydomain.int", 30015, "sstringer", "ReallyCoolPassw0rd", true, 60, true, 60, true, true, 60, true, true, 60, true}, {"Ten01_TST", "hanadb.mydomain.int", 30041, "sstringer", "ReallyCoolPassw0rd", true, 60, true, 60, true, true, 60, true, false, 0, true}}}, false},
+		{"GoodFile01", args{lc, "testFiles/configtest01.json"}, &Config{true, 60, true, 60, true, true, 60, true, true, 60, true, []DbConfig{{"systemdb_TST", "hanadb.mydomain.int", 30015, "sstringer", "ReallyCoolPassw0rd", true, 60, true, 60, true, true, 60, true, true, 60, true, nil}}}, false},
+		{"GoodFile02", args{lc, "testFiles/configtest02.json"}, &Config{true, 60, true, 60, true, true, 60, true, true, 60, true, []DbConfig{{"systemdb_TST", "hanadb.mydomain.int", 30015, "sstringer", "ReallyCoolPassw0rd", true, 60, true, 60, true, true, 60, true, true, 60, true, nil}, {"Ten01_TST", "hanadb.mydomain.int", 30041, "sstringer", "ReallyCoolPassw0rd", true, 60, true, 60, true, true, 60, true, false, 0, true, nil}}}, false},
 		{"NoRootCleanTrace", args{lc, "testFiles/NoRootCleanTrace.json"}, &Config{}, true},
 		{"NoRootRetainTraceDays", args{lc, "testFiles/NoRootRetainTraceDays.json"}, &Config{}, true},
 		{"NoRootCleanBackupCatalog", args{lc, "testFiles/NoRootCleanBackupCatalog.json"}, &Config{}, true},
@@ -44,14 +44,14 @@ func TestGetConfigFromFile(t *testing.T) {
 		{"NoDbHostname", args{lc, "testFiles/NoDbHostname.json"}, &Config{}, true},
 		{"NoDbPort", args{lc, "testFiles/NoDbPort.json"}, &Config{}, true},
 		{"NoDbUsername", args{lc, "testFiles/NoDbUsername.json"}, &Config{}, true},
-		{"NoDbPassword", args{lc, "testFiles/NoDbPassword.json"}, &Config{true, 60, true, 60, true, true, 60, true, true, 60, true, []DbConfig{{"systemdb_TST", "hanadb.mydomain.int", 30015, "sstringer", "", true, 60, true, 60, true, true, 60, true, true, 60, true}}}, false},
+		{"NoDbPassword", args{lc, "testFiles/NoDbPassword.json"}, &Config{true, 60, true, 60, true, true, 60, true, true, 60, true, []DbConfig{{"systemdb_TST", "hanadb.mydomain.int", 30015, "sstringer", "", true, 60, true, 60, true, true, 60, true, true, 60, true, nil}}}, false},
 		{"NegativeDbPort", args{lc, "testFiles/NegativeDbPort.json"}, &Config{}, true},
 		{"NegativeDbRetainTraceDays", args{lc, "testFiles/NegativeDbRetainTraceDays.json"}, &Config{}, true},
 		{"NegativeDbRetainAlertsDays", args{lc, "testFiles/NegativeDbRetainAlertsDays.json"}, &Config{}, true},
 		{"NegativeDbRetainBackupCatalogDays", args{lc, "testFiles/NegativeDbRetainBackupCatalogDays.json"}, &Config{}, true},
 		{"NegativeDbRetainAuditDays", args{lc, "testFiles/NegativeDbRetainAuditDays.json"}, &Config{}, true},
 		{"NoDbUsername", args{lc, "testFiles/NoDbUsername.json"}, &Config{}, true},
-		{"DbOveride", args{lc, "testFiles/DbOverride.json"}, &Config{false, 0, false, 0, false, false, 0, false, false, 0, true, []DbConfig{{"systemdb_TST", "hanadb.mydomain.int", 30015, "sstringer", "ReallyCoolPassw0rd", true, 30, true, 30, true, true, 30, true, true, 30, true}}}, false},
+		{"DbOveride", args{lc, "testFiles/DbOverride.json"}, &Config{false, 0, false, 0, false, false, 0, false, false, 0, true, []DbConfig{{"systemdb_TST", "hanadb.mydomain.int", 30015, "sstringer", "ReallyCoolPassw0rd", true, 30, true, 30, true, true, 30, true, true, 30, true, nil}}}, false},
 		{"InvalidJson", args{lc, "testFiles/invalidJson.json"}, &Config{}, true},
 		{"InvalidPath", args{lc, "testFiles/NOFILE.json"}, &Config{}, true},
 	}

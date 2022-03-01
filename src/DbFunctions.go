@@ -7,12 +7,12 @@ import (
 )
 
 //HanaVersion function returns the version string of the database
-func HanaVersion(name string, lc chan<- LogMessage, hdb *sql.DB) (string, error) {
-	fname := fmt.Sprintf("%s:%s", name, "HanaVersion")
+func (dbc *DbConfig) HanaVersionFunc(lc chan<- LogMessage) (string, error) {
+	fname := fmt.Sprintf("%s:%s", dbc.Name, "HanaVersion")
 	var version string
 	lc <- LogMessage{fname, "Starting", true}
 	lc <- LogMessage{fname, fmt.Sprintf("Performing query: %s", QUERY_GetVersion), true}
-	r1 := hdb.QueryRow(QUERY_GetVersion)
+	r1 := dbc.db.QueryRow(QUERY_GetVersion)
 	err := r1.Scan(&version)
 	if err != nil {
 		lc <- LogMessage{fname, "Query failed", false}
@@ -23,20 +23,20 @@ func HanaVersion(name string, lc chan<- LogMessage, hdb *sql.DB) (string, error)
 	return version, nil
 }
 
-//TruncateTraceFiles function removes closed trace files that are older than the number of days
-//specified in the 'TrncDaysOlder' argument.  The function will log all activity.  The function will also return
+//CleanTraceFiles function removes closed trace files that are older than the number of days
+//specified in the 'CleanDaysOlder' argument.  The function will log all activity.  The function will also return
 //an error.  If no errors are found nil is returned.
 //In some cases it may not be possible to remove a trace file, these incidents are logged but will not cause the function to error.
-func TruncateTraceFiles(lc chan<- LogMessage, name string, hdb *sql.DB, TrncDaysOlder uint, dryrun bool) error {
-	fname := fmt.Sprintf("%s:%s", name, "TruncateTraceFiles")
+func (dbc *DbConfig) CleanTraceFilesFunc(lc chan<- LogMessage, CleanDaysOlder uint, dryrun bool) error {
+	fname := fmt.Sprintf("%s:%s", dbc.Name, "CleanTraceFiles")
 	lc <- LogMessage{fname, "Starting", true}
 	if dryrun {
 		lc <- LogMessage{fname, "Dry run enabled, no changes will be made", false}
 	}
 
 	/*This doesn't look right, you could set it to zero and have all history prior to the last full back removed*/
-	if TrncDaysOlder == 0 {
-		lc <- LogMessage{fname, "TrncDaysOlder is set to zero, nothing to do", false}
+	if CleanDaysOlder == 0 {
+		lc <- LogMessage{fname, "CleanDaysOlder is set to zero, nothing to do", false}
 		return nil
 	}
 
@@ -46,9 +46,9 @@ func TruncateTraceFiles(lc chan<- LogMessage, name string, hdb *sql.DB, TrncDays
 
 	/*Get the list of candidate tracefiles where the M time days is greater than the TrncDaysOlder arguments*/
 	//fmt.Printf("%s", GetTraceFileQuery(TrncDaysOlder))
-	lc <- LogMessage{fname, fmt.Sprintf("Performing query:'%s'", GetTraceFileQuery(TrncDaysOlder)), true}
+	lc <- LogMessage{fname, fmt.Sprintf("Performing query:'%s'", GetTraceFileQuery(CleanDaysOlder)), true}
 
-	rows, err := hdb.Query(GetTraceFileQuery(TrncDaysOlder))
+	rows, err := dbc.db.Query(GetTraceFileQuery(CleanDaysOlder))
 	if err != nil {
 		lc <- LogMessage{fname, "Query Failed", true}
 		lc <- LogMessage{fname, err.Error(), true}
@@ -82,7 +82,7 @@ func TruncateTraceFiles(lc chan<- LogMessage, name string, hdb *sql.DB, TrncDays
 		lc <- LogMessage{fname, fmt.Sprintf("Performing Query'%s'", GetRemoveTrace(v.Hostname, v.TraceFile)), true}
 		/*do nothing destructive if dryrun enabled*/
 		if !dryrun {
-			_, err := hdb.Exec(GetRemoveTrace(v.Hostname, v.TraceFile))
+			_, err := dbc.db.Exec(GetRemoveTrace(v.Hostname, v.TraceFile))
 			if err != nil {
 				lc <- LogMessage{fname, fmt.Sprintf("The tracefile '%s' on host '%s' could not be removed, it may be open!  This will be retried next time.", v.TraceFile, v.Hostname), true}
 				lc <- LogMessage{fname, err.Error(), true}
@@ -94,18 +94,18 @@ func TruncateTraceFiles(lc chan<- LogMessage, name string, hdb *sql.DB, TrncDays
 
 			lc <- LogMessage{fname, "Checking if tracefile was removed", true}
 			lc <- LogMessage{fname, fmt.Sprint("Performing Query:", v.TraceFile), true}
-			err = hdb.QueryRow(GetCheckTracePresent(v.TraceFile)).Scan(&tracePresent)
+			err = dbc.db.QueryRow(GetCheckTracePresent(v.TraceFile)).Scan(&tracePresent)
 			switch {
 			case err == sql.ErrNoRows:
 				lc <- LogMessage{fname, "No rows returned", true}
 				lc <- LogMessage{fname, err.Error(), true}
 				lc <- LogMessage{fname, fmt.Sprintf("Failed to remove tracefile %s", v.TraceFile), false}
-				continue /*try the next one*/
+				continue /*try the next one perhaps we should check for how many files couldn't be removed*/
 			case err != nil:
 				lc <- LogMessage{fname, "DB failed to query failed", true}
 				lc <- LogMessage{fname, err.Error(), true}
 				lc <- LogMessage{fname, fmt.Sprintf("Failed to remove tracefile %s", v.TraceFile), false}
-				continue /*try the next one*/
+				continue /*try the next one - don't throw error - perhaps we should check for how many files couldn't be removed*/
 			default:
 				if tracePresent == 0 {
 					lc <- LogMessage{fname, fmt.Sprintf("Successfully removed trace file %s", v.TraceFile), true}
@@ -133,8 +133,8 @@ func TruncateTraceFiles(lc chan<- LogMessage, name string, hdb *sql.DB, TrncDays
 //TruncateBackupCatalog - bool.  If true, the function will be triggered.
 //BackupCatalogRetentionDays - uint, used to decide which backup catalog entries to retain
 //DeleteOldBackups - bool, if false only the catalog entries will be removed, if true the removed backup catalog entries will be deleted from the file system or BACKINT, use with caution
-func TruncateBackupCatalog(lc chan<- LogMessage, name string, hdb *sql.DB, TrncDaysOlder uint, delete bool, dryrun bool) error {
-	fname := fmt.Sprintf("%s:%s", name, "TruncateBackupCatalog")
+func (dbc *DbConfig) CleanBackupFunc(lc chan<- LogMessage, CleanDaysOlder uint, delete bool, dryrun bool) error {
+	fname := fmt.Sprintf("%s:%s", dbc.Name, "CleanBackupCatalog")
 	lc <- LogMessage{fname, "Starting", true}
 	if dryrun {
 		lc <- LogMessage{fname, "Dry run enabled, no changes will be made", false}
@@ -142,8 +142,8 @@ func TruncateBackupCatalog(lc chan<- LogMessage, name string, hdb *sql.DB, TrncD
 
 	/*Find the backup ID of the latest full backup that matches the */
 	var backupID string
-	lc <- LogMessage{fname, fmt.Sprintf("Performing Query: %s", GetLatestFullBackupID(TrncDaysOlder)), true}
-	err := hdb.QueryRow(GetLatestFullBackupID(TrncDaysOlder)).Scan(&backupID)
+	lc <- LogMessage{fname, fmt.Sprintf("Performing Query: %s", GetLatestFullBackupID(CleanDaysOlder)), true}
+	err := dbc.db.QueryRow(GetLatestFullBackupID(CleanDaysOlder)).Scan(&backupID)
 	switch {
 	case err == sql.ErrNoRows:
 		lc <- LogMessage{fname, "No backupID found which matches the criteria", false}
@@ -160,7 +160,7 @@ func TruncateBackupCatalog(lc chan<- LogMessage, name string, hdb *sql.DB, TrncD
 	/*Count how many backups will be deleted*/
 	bfs := []BackupFiles{}
 	lc <- LogMessage{fname, fmt.Sprintf("Performing Query: %s", GetBackupFileData(backupID)), true}
-	rows, err := hdb.Query(GetBackupFileData(backupID))
+	rows, err := dbc.db.Query(GetBackupFileData(backupID))
 	if err != nil {
 		lc <- LogMessage{fname, "An error occurred querying the database", false}
 		lc <- LogMessage{fname, err.Error(), true}
@@ -205,7 +205,7 @@ func TruncateBackupCatalog(lc chan<- LogMessage, name string, hdb *sql.DB, TrncD
 	lc <- LogMessage{fname, fmt.Sprintf("Performing query: %s", query), true}
 
 	if !dryrun {
-		_, err = hdb.Exec(query)
+		_, err = dbc.db.Exec(query)
 		if err != nil {
 			lc <- LogMessage{fname, "Query failed", false}
 			lc <- LogMessage{fname, err.Error(), true}

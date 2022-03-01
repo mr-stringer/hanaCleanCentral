@@ -23,8 +23,9 @@ type DbConfig struct {
 	RetainAlertsDays        uint   // Specifies the number of days of alerts to retain
 	CleanLogVolume          bool   // If true, free log segments will be removed from the file system
 	CleanAudit              bool   // If true, old audit records will be deleted
-	RetainAuditDays         uint   // Specifes the number of days of audit log to retain
+	RetainAuditDays         uint   // Specifies the number of days of audit log to retain
 	CleanDataVolume         bool   // If true, the data volume will be defragemented, currently uses default size of 120
+	db                      *sql.DB
 }
 
 func (hdb DbConfig) Dsn() string {
@@ -32,28 +33,29 @@ func (hdb DbConfig) Dsn() string {
 }
 
 //helper function that populates
-func (hdb *DbConfig) NewDb() (*sql.DB, error) {
-	db, err := sql.Open("hdb", hdb.Dsn())
+func (hdb *DbConfig) NewDb() error {
+	var err error
+	hdb.db, err = sql.Open("hdb", hdb.Dsn())
 	if err != nil {
-		return db, err
+		return err
 	}
 
-	err = db.Ping()
+	err = hdb.db.Ping()
 	if err != nil {
-		return db, err
+		return err
 	}
 
-	return db, nil
+	return nil
 }
 
-//Gets the database password from the enviroment.
+//Gets the database password from the environment.
 //The code search for the variable HCC_<dbConfig.Name>
 func (db *DbConfig) GetPasswordFromEnv() error {
 
 	log.Printf("Searching for password for %s from environment variable", db.Name)
 	db.Password = os.Getenv(fmt.Sprintf("HCC_%s", db.Name))
 	if db.Password == "" {
-		return fmt.Errorf("was not able to source password from %s for the environement", db.Name)
+		return fmt.Errorf("was not able to source password from %s for the environnement", db.Name)
 	}
 	return nil
 }

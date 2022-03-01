@@ -8,7 +8,8 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 )
 
-func TestHanaVersion(t *testing.T) {
+func TestDbConfig_HanaVersionFunc(t *testing.T) {
+	/*Test Setup*/
 	/*Mock DB*/
 	db1, mock, err := sqlmock.New()
 	if err != nil {
@@ -16,32 +17,33 @@ func TestHanaVersion(t *testing.T) {
 	}
 	defer db1.Close()
 
+	/*Logger*/
 	lc := make(chan LogMessage)
 	quit := make(chan bool)
 	go Logger(AppConfig{"file", true, false}, lc, quit)
 
-	var name string = "test_tst"
-
+	/*Types*/
 	type args struct {
-		name string
-		lc   chan<- LogMessage
-		hdb  *sql.DB
+		lc chan<- LogMessage
 	}
+
+	/*Tests*/
 	tests := []struct {
 		name    string
+		dbc     *DbConfig
 		args    args
 		want    string
 		wantErr bool
 	}{
-		{"Good001", args{name, lc, db1}, "2.00.45.00", false},
-		{"Good002", args{name, lc, db1}, "2.00.044.00.1571081837", false},
-		{"Good003", args{name, lc, db1}, "1.00.044.00.1571081837", false},
-		{"Error001", args{name, lc, db1}, "", true},
+		{"Good01", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, "2.00.45.00", false},
+		{"Good02", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, "2.00.43.33", false},
+		{"Good03", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, "3.00.00.10", false},
+		{"Good04", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, "1.00.112.3", false},
+		{"DbError", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, "", true},
 	}
 	for _, tt := range tests {
-
+		/*Set up per case mocking*/
 		rows := sqlmock.NewRows([]string{"VERSION"}).AddRow(tt.want)
-
 		if tt.wantErr {
 			mock.ExpectQuery(QUERY_GetVersion).WillReturnError(fmt.Errorf("DB Error"))
 		} else {
@@ -49,19 +51,20 @@ func TestHanaVersion(t *testing.T) {
 		}
 
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := HanaVersion(tt.args.name, tt.args.lc, tt.args.hdb)
+			got, err := tt.dbc.HanaVersionFunc(tt.args.lc)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("HanaVersion() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("DbConfig.HanaVersion() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("HanaVersion() = %v, want %v", got, tt.want)
+				t.Errorf("DbConfig.HanaVersion() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestTruncateTraceFiles(t *testing.T) {
+func TestDbConfig_CleanTraceFilesFunc(t *testing.T) {
+	/*Test Setup*/
 	/*Mock DB*/
 	db1, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	if err != nil {
@@ -69,192 +72,241 @@ func TestTruncateTraceFiles(t *testing.T) {
 	}
 	defer db1.Close()
 
-	/*Create the log channel*/
+	/*Logger*/
 	lc := make(chan LogMessage)
 	quit := make(chan bool)
 	go Logger(AppConfig{"file", true, false}, lc, quit)
 
+	/*Args*/
 	type args struct {
-		lc            chan LogMessage
-		name          string
-		hdb           *sql.DB
-		TrncDaysOlder uint
-		DryRun        bool
+		lc             chan<- LogMessage
+		CleanDaysOlder uint
+		dryrun         bool
 	}
+
+	/*Tests*/
 	tests := []struct {
 		name    string
+		dbc     *DbConfig
 		args    args
 		wantErr bool
 	}{
-		{"Good01", args{lc, "db@sid", db1, 28, false}, false},
-		{"Good02", args{lc, "db@sid", db1, 7, false}, false},
-		{"Good03", args{lc, "db@sid", db1, 365, false}, false},
-		{"Set to zero", args{lc, "db@sid", db1, 0, false}, false},
-		{"Bad01 Trace Query Fails", args{lc, "db@sid", db1, 28, false}, true},
-		{"Bad02 Unscannable Data", args{lc, "db@sid", db1, 28, false}, true},
-		{"Bad03 Trace Clear Fails", args{lc, "db@sid", db1, 28, false}, false},
-		{"MultiTraceGood", args{lc, "db@sid", db1, 28, false}, false},
-		{"MultiTraceCantDelete1", args{lc, "db@sid", db1, 28, false}, false},
-		{"NothingToDelete", args{lc, "db@sid", db1, 28, false}, false},
-		{"RemovalRowError", args{lc, "db@sid", db1, 28, false}, false},
+		{"Good01", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false}, false},
+		{"Good02", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 14, false}, false},
+		{"Good03", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 7, false}, false},
+		{"SetToZero", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 0, false}, false},
+		{"TraceQueryFails", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false}, true},
+		{"TraceQueryUnscannable", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false}, true},
+		{"ClearTraceFails", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false}, false},
+		{"MultiTraceGood", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false}, false},
+		{"MultiTraceCantDeleteFirst", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false}, false},
+		{"NothingToDelete", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false}, false},
+		{"RemovalRowEmpty", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false}, false},
+		{"RemovalRowError", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false}, false},
+		{"DryRun", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, true}, false},
 	}
 	for _, tt := range tests {
 
-		/*Prep the DB*/
-		if tt.name == "Bad01 Trace Query Fails" {
-			mock.ExpectQuery(GetTraceFileQuery(tt.args.TrncDaysOlder)).WillReturnError(fmt.Errorf("Some DB error"))
-		} else if tt.name == "Bad01 Trace Clear Fails" {
-			rows := sqlmock.NewRows([]string{"HOST", "FILE_NAME", "FILE_SIZE", "FILE_MTIME"}).AddRow("hanaserver", "trace.trc", "6400000", "2020-03-14 23:13:35.000000000")
-			mock.ExpectQuery(GetTraceFileQuery(tt.args.TrncDaysOlder)).WillReturnRows(rows)
-			mock.ExpectExec(GetRemoveTrace("hanaserver", "trace.trc")).WillReturnError(fmt.Errorf("Some DB error"))
-		} else if tt.name == "Bad02 Unscannable Data" {
-			rows := sqlmock.NewRows([]string{"HOST", "FILE_NAME", "FILE_SIZE", "FILE_MTIME"}).AddRow("hanaserver", "trace.trc", "BAD_DATA", "2020-03-14 23:13:35.000000000")
-			mock.ExpectQuery(GetTraceFileQuery(tt.args.TrncDaysOlder)).WillReturnRows(rows)
-		} else if tt.name == "Bad03 Trace Clear Fails" {
-			rows1 := sqlmock.NewRows([]string{"HOST", "FILE_NAME", "FILE_SIZE", "FILE_MTIME"}).AddRow("hanaserver", "trace.trc", "6400000", "2020-03-14 23:13:35.000000000")
-			mock.ExpectQuery(GetTraceFileQuery(tt.args.TrncDaysOlder)).WillReturnRows(rows1)
-			mock.ExpectExec(GetRemoveTrace("hanaserver", "trace.trc")).WillReturnError(fmt.Errorf("Some DB error"))
-		} else if tt.name[0:4] == "Good" {
+		/*Mock switch*/
+		switch {
+		case tt.name[0:4] == "Good":
 			rows1 := sqlmock.NewRows([]string{"HOST", "FILE_NAME", "FILE_SIZE", "FILE_MTIME"}).AddRow("hanaserver", "trace.trc", "6400000", "2020-03-14 23:13:35.000000000")
 			rows2 := sqlmock.NewRows([]string{"TRACE"}).AddRow("0")
-			mock.ExpectQuery(GetTraceFileQuery(tt.args.TrncDaysOlder)).WillReturnRows(rows1)
+			mock.ExpectQuery(GetTraceFileQuery(tt.args.CleanDaysOlder)).WillReturnRows(rows1)
 			mock.ExpectExec(GetRemoveTrace("hanaserver", "trace.trc")).WillReturnResult(sqlmock.NewResult(1, 1))
 			mock.ExpectQuery(GetCheckTracePresent("trace.trc")).WillReturnRows(rows2)
-		} else if tt.name == "MultiTraceGood" {
+		case tt.name == "SetToZero":
+			//nothing to mock
+		case tt.name == "TraceQueryFails":
+			mock.ExpectQuery(GetTraceFileQuery(tt.args.CleanDaysOlder)).WillReturnError(fmt.Errorf("Some DB error"))
+		case tt.name == "TraceQueryUnscannable":
+			rows := sqlmock.NewRows([]string{"HOST", "FILE_NAME", "FILE_SIZE", "FILE_MTIME"}).AddRow("hanaserver", "trace.trc", "BAD_DATA", "2020-03-14 23:13:35.000000000")
+			mock.ExpectQuery(GetTraceFileQuery(tt.args.CleanDaysOlder)).WillReturnRows(rows)
+		case tt.name == "ClearTraceFails":
+			rows1 := sqlmock.NewRows([]string{"HOST", "FILE_NAME", "FILE_SIZE", "FILE_MTIME"}).AddRow("hanaserver", "trace.trc", "6400000", "2020-03-14 23:13:35.000000000")
+			mock.ExpectQuery(GetTraceFileQuery(tt.args.CleanDaysOlder)).WillReturnRows(rows1)
+			mock.ExpectExec(GetRemoveTrace("hanaserver", "trace.trc")).WillReturnError(fmt.Errorf("Some DB error"))
+		case tt.name == "MultiTraceGood":
 			rows1 := sqlmock.NewRows([]string{"HOST", "FILE_NAME", "FILE_SIZE", "FILE_MTIME"}).AddRow("hanaserver", "trace.trc", "6400000", "2020-03-14 23:13:35.000000000").AddRow("hanaserver", "trace2.trc", "6400000", "2020-03-14 23:13:35.000000000")
 			rows2 := sqlmock.NewRows([]string{"TRACE"}).AddRow("0")
-			mock.ExpectQuery(GetTraceFileQuery(tt.args.TrncDaysOlder)).WillReturnRows(rows1)
+			mock.ExpectQuery(GetTraceFileQuery(tt.args.CleanDaysOlder)).WillReturnRows(rows1)
 			mock.ExpectExec(GetRemoveTrace("hanaserver", "trace.trc")).WillReturnResult(sqlmock.NewResult(1, 1))
 			mock.ExpectQuery(GetCheckTracePresent("trace.trc")).WillReturnRows(rows2)
 			mock.ExpectExec(GetRemoveTrace("hanaserver", "trace2.trc")).WillReturnResult(sqlmock.NewResult(1, 1))
 			mock.ExpectQuery(GetCheckTracePresent("trace2.trc")).WillReturnRows(rows2)
-		} else if tt.name == "MultiTraceCantDelete1" {
+		case tt.name == "MultiTraceCantDeleteFirst":
 			rows1 := sqlmock.NewRows([]string{"HOST", "FILE_NAME", "FILE_SIZE", "FILE_MTIME"}).AddRow("hanaserver", "trace.trc", "6400000", "2020-03-14 23:13:35.000000000").AddRow("hanaserver", "trace2.trc", "6400000", "2020-03-14 23:13:35.000000000")
 			rows2 := sqlmock.NewRows([]string{"TRACE"}).AddRow("1")
 			rows3 := sqlmock.NewRows([]string{"TRACE"}).AddRow("0")
-			mock.ExpectQuery(GetTraceFileQuery(tt.args.TrncDaysOlder)).WillReturnRows(rows1)
+			mock.ExpectQuery(GetTraceFileQuery(tt.args.CleanDaysOlder)).WillReturnRows(rows1)
 			mock.ExpectExec(GetRemoveTrace("hanaserver", "trace.trc")).WillReturnResult(sqlmock.NewResult(1, 1))
 			mock.ExpectQuery(GetCheckTracePresent("trace.trc")).WillReturnRows(rows2)
 			mock.ExpectExec(GetRemoveTrace("hanaserver", "trace2.trc")).WillReturnResult(sqlmock.NewResult(1, 1))
 			mock.ExpectQuery(GetCheckTracePresent("trace2.trc")).WillReturnRows(rows3)
-		} else if tt.name == "NothingToDelete" {
+		case tt.name == "NothingToDelete":
 			rows1 := sqlmock.NewRows([]string{"HOST", "FILE_NAME", "FILE_SIZE", "FILE_MTIME"})
-			mock.ExpectQuery(GetTraceFileQuery(tt.args.TrncDaysOlder)).WillReturnRows(rows1)
-		} else if tt.name == "RemovalNoRows" {
+			mock.ExpectQuery(GetTraceFileQuery(tt.args.CleanDaysOlder)).WillReturnRows(rows1)
+		case tt.name == "RemovalRowEmpty":
 			rows1 := sqlmock.NewRows([]string{"HOST", "FILE_NAME", "FILE_SIZE", "FILE_MTIME"}).AddRow("hanaserver", "traceNoRows.trc", "6400000", "2020-03-14 23:13:35.000000000")
 			rows2 := sqlmock.NewRows([]string{"TRACE"})
-			mock.ExpectQuery(GetTraceFileQuery(tt.args.TrncDaysOlder)).WillReturnRows(rows1)
+			mock.ExpectQuery(GetTraceFileQuery(tt.args.CleanDaysOlder)).WillReturnRows(rows1)
 			mock.ExpectExec(GetRemoveTrace("hanaserver", "traceNoRows.trc")).WillReturnResult(sqlmock.NewResult(1, 1))
 			mock.ExpectQuery(GetCheckTracePresent("traceNoRows.trc")).WillReturnRows(rows2)
-		} else if tt.name == "RemovalRowError" {
+		case tt.name == "RemovalRowError":
 			rows1 := sqlmock.NewRows([]string{"HOST", "FILE_NAME", "FILE_SIZE", "FILE_MTIME"}).AddRow("hanaserver", "traceNoRows.trc", "6400000", "2020-03-14 23:13:35.000000000")
-			mock.ExpectQuery(GetTraceFileQuery(tt.args.TrncDaysOlder)).WillReturnRows(rows1)
+			mock.ExpectQuery(GetTraceFileQuery(tt.args.CleanDaysOlder)).WillReturnRows(rows1)
 			mock.ExpectExec(GetRemoveTrace("hanaserver", "traceNoRows.trc")).WillReturnResult(sqlmock.NewResult(1, 1))
-			mock.ExpectQuery(GetCheckTracePresent("traceNoRows.trc")).WillReturnError(fmt.Errorf("Some DB error"))
+			mock.ExpectQuery(GetCheckTracePresent("traceNoRows.trc")).WillReturnError(fmt.Errorf("some DB error"))
+		case tt.name == "DryRun":
+			rows1 := sqlmock.NewRows([]string{"HOST", "FILE_NAME", "FILE_SIZE", "FILE_MTIME"}).AddRow("hanaserver", "traceNoRows.trc", "6400000", "2020-03-14 23:13:35.000000000")
+			mock.ExpectQuery(GetTraceFileQuery(tt.args.CleanDaysOlder)).WillReturnRows(rows1)
+		default:
+			continue
 		}
 
 		t.Run(tt.name, func(t *testing.T) {
-			if err := TruncateTraceFiles(tt.args.lc, tt.args.name, tt.args.hdb, tt.args.TrncDaysOlder, tt.args.DryRun); (err != nil) != tt.wantErr {
-				t.Errorf("TruncateTraceFiles() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestTruncateBackupCatalog(t *testing.T) {
-	/*Mock DB*/
-	db1, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
-	if err != nil {
-		t.Errorf("an error '%s' was not expected when opening mock database connection", err)
-	}
-	defer db1.Close()
-
-	lc := make(chan LogMessage)
-	quit := make(chan bool)
-	defer close(lc)
-	defer close(quit)
-	go Logger(AppConfig{"file", false, false}, lc, quit)
-
-	type args struct {
-		lc            chan LogMessage
-		name          string
-		hdb           *sql.DB
-		TrncDaysOlder uint
-		delete        bool
-		dryrun        bool
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{"Good01", args{lc, "db@sid", db1, 28, false, false}, false},
-		{"Good02 Complete", args{lc, "db@sid", db1, 28, true, false}, false},
-		{"Get ID Failed", args{lc, "db@sid", db1, 28, true, false}, true},
-		{"Get ID No Rows", args{lc, "db@sid", db1, 28, true, false}, false},
-		{"Nothing to Delete", args{lc, "db@sid", db1, 28, true, false}, false},
-		{"Get Backup File Data Failed", args{lc, "db@sid", db1, 28, true, false}, true},
-		{"Get Backup Delete Complete Failed", args{lc, "db@sid", db1, 28, true, false}, true},
-		{"Get Backup Delete Failed", args{lc, "db@sid", db1, 28, false, false}, true},
-	}
-	for _, tt := range tests {
-
-		if tt.name == "Good01" {
-			var backupID string = "12345678890"
-			rows1 := sqlmock.NewRows([]string{"BACKUP_ID"}).AddRow(backupID)
-			rows2 := sqlmock.NewRows([]string{"ENTRY", "COUNT", "BYTES"}).AddRow("complete data backup", 10, 100000000).AddRow("log backup", 100, 100000000)
-			mock.ExpectQuery(GetLatestFullBackupID(tt.args.TrncDaysOlder)).WillReturnRows(rows1)
-			mock.ExpectQuery(GetBackupFileData(backupID)).WillReturnRows(rows2)
-			mock.ExpectExec(GetBackupDelete(backupID)).WillReturnResult(sqlmock.NewResult(1, 1))
-		} else if tt.name == "Good02 Complete" {
-			var backupID string = "12345678890"
-			rows1 := sqlmock.NewRows([]string{"BACKUP_ID"}).AddRow(backupID)
-			rows2 := sqlmock.NewRows([]string{"ENTRY", "COUNT", "BYTES"}).AddRow("complete data backup", 10, 100000000).AddRow("log backup", 100, 100000000)
-			mock.ExpectQuery(GetLatestFullBackupID(tt.args.TrncDaysOlder)).WillReturnRows(rows1)
-			mock.ExpectQuery(GetBackupFileData(backupID)).WillReturnRows(rows2)
-			mock.ExpectExec(GetBackupDeleteComplete(backupID)).WillReturnResult(sqlmock.NewResult(1, 1))
-		} else if tt.name == "Get ID Failed" {
-			mock.ExpectQuery(GetLatestFullBackupID(tt.args.TrncDaysOlder)).WillReturnError(fmt.Errorf("Some DB error"))
-		} else if tt.name == "Get ID No Rows" {
-			mock.ExpectQuery(GetLatestFullBackupID(tt.args.TrncDaysOlder)).WillReturnError(sql.ErrNoRows)
-		} else if tt.name == "Get Backup File Data Failed" {
-			var backupID string = "12345678890"
-			rows1 := sqlmock.NewRows([]string{"BACKUP_ID"}).AddRow(backupID)
-			mock.ExpectQuery(GetLatestFullBackupID(tt.args.TrncDaysOlder)).WillReturnRows(rows1)
-			mock.ExpectQuery(GetBackupFileData(backupID)).WillReturnError(fmt.Errorf("Some DB error"))
-		} else if tt.name == "Nothing to Delete" {
-			var backupID string = "12345678890"
-			rows1 := sqlmock.NewRows([]string{"BACKUP_ID"}).AddRow(backupID)
-			rows2 := sqlmock.NewRows([]string{"ENTRY", "COUNT", "BYTES"})
-			mock.ExpectQuery(GetLatestFullBackupID(tt.args.TrncDaysOlder)).WillReturnRows(rows1)
-			mock.ExpectQuery(GetBackupFileData(backupID)).WillReturnRows(rows2)
-
-		} else if tt.name == "Get Backup Delete Complete Failed" {
-			var backupID string = "12345678890"
-			rows1 := sqlmock.NewRows([]string{"BACKUP_ID"}).AddRow(backupID)
-			rows2 := sqlmock.NewRows([]string{"ENTRY", "COUNT", "BYTES"}).AddRow("complete data backup", 10, 100000000).AddRow("log backup", 100, 100000000)
-			mock.ExpectQuery(GetLatestFullBackupID(tt.args.TrncDaysOlder)).WillReturnRows(rows1)
-			mock.ExpectQuery(GetBackupFileData(backupID)).WillReturnRows(rows2)
-			mock.ExpectExec(GetBackupDeleteComplete(backupID)).WillReturnError(fmt.Errorf("Some DB error"))
-		} else if tt.name == "Get Backup Delete Failed" {
-			var backupID string = "12345678890"
-			rows1 := sqlmock.NewRows([]string{"BACKUP_ID"}).AddRow(backupID)
-			rows2 := sqlmock.NewRows([]string{"ENTRY", "COUNT", "BYTES"}).AddRow("complete data backup", 10, 100000000).AddRow("log backup", 100, 100000000)
-			mock.ExpectQuery(GetLatestFullBackupID(tt.args.TrncDaysOlder)).WillReturnRows(rows1)
-			mock.ExpectQuery(GetBackupFileData(backupID)).WillReturnRows(rows2)
-			mock.ExpectExec(GetBackupDelete(backupID)).WillReturnError(fmt.Errorf("Some DB error"))
-		} else {
-			return
-		}
-
-		t.Run(tt.name, func(t *testing.T) {
-			if err := TruncateBackupCatalog(tt.args.lc, tt.args.name, tt.args.hdb, tt.args.TrncDaysOlder, tt.args.delete, tt.args.dryrun); (err != nil) != tt.wantErr {
-				t.Errorf("TruncateBackupCatalog() error = %v, wantErr %v", err, tt.wantErr)
+			if err := tt.dbc.CleanTraceFilesFunc(tt.args.lc, tt.args.CleanDaysOlder, tt.args.dryrun); (err != nil) != tt.wantErr {
+				t.Errorf("DbConfig.CleanTraceFiles() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
 	quit <- true
 }
+
+func TestDbConfig_CleanBackupFunc(t *testing.T) {
+	/*Test Setup*/
+	/*Mock DB*/
+	db1, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	if err != nil {
+		t.Errorf("an error '%s' was not expected when opening mock database connection", err)
+	}
+	defer db1.Close()
+
+	/*Logger*/
+	lc := make(chan LogMessage)
+	quit := make(chan bool)
+	go Logger(AppConfig{"file", true, false}, lc, quit)
+
+	/*args*/
+	type args struct {
+		lc             chan<- LogMessage
+		CleanDaysOlder uint
+		delete         bool
+		dryrun         bool
+	}
+
+	/*Tests*/
+	tests := []struct {
+		name    string
+		dbc     *DbConfig
+		args    args
+		wantErr bool
+	}{
+		{"GoodClean", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false, false}, false},
+		{"GoodDelete", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, true, false}, false},
+		{"QueryBackupIdFailed", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false, false}, true},
+		{"QueryBackupIdNoRows", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false, false}, false},
+		{"QueryFileDataFailed", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false, false}, true},
+		{"NothingToDelete", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false, false}, false},
+		{"CleanFailed", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false, false}, true},
+		{"DeleteFailed", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, true, false}, true},
+	}
+	for _, tt := range tests {
+
+		/*Mock Switch*/
+		switch {
+		case tt.name == "GoodClean":
+			var backupID string = "12345678890"
+			rows1 := sqlmock.NewRows([]string{"BACKUP_ID"}).AddRow(backupID)
+			rows2 := sqlmock.NewRows([]string{"ENTRY", "COUNT", "BYTES"}).AddRow("complete data backup", 10, 100000000).AddRow("log backup", 100, 100000000)
+			mock.ExpectQuery(GetLatestFullBackupID(tt.args.CleanDaysOlder)).WillReturnRows(rows1)
+			mock.ExpectQuery(GetBackupFileData(backupID)).WillReturnRows(rows2)
+			mock.ExpectExec(GetBackupDelete(backupID)).WillReturnResult(sqlmock.NewResult(1, 1))
+		case tt.name == "GoodDelete":
+			var backupID string = "12345678890"
+			rows1 := sqlmock.NewRows([]string{"BACKUP_ID"}).AddRow(backupID)
+			rows2 := sqlmock.NewRows([]string{"ENTRY", "COUNT", "BYTES"}).AddRow("complete data backup", 10, 100000000).AddRow("log backup", 100, 100000000)
+			mock.ExpectQuery(GetLatestFullBackupID(tt.args.CleanDaysOlder)).WillReturnRows(rows1)
+			mock.ExpectQuery(GetBackupFileData(backupID)).WillReturnRows(rows2)
+			mock.ExpectExec(GetBackupDeleteComplete(backupID)).WillReturnResult(sqlmock.NewResult(1, 1))
+		case tt.name == "QueryBackupIdFailed":
+			mock.ExpectQuery(GetLatestFullBackupID(tt.args.CleanDaysOlder)).WillReturnError(fmt.Errorf("some DB error"))
+		case tt.name == "QueryBackupIdNoRows":
+			mock.ExpectQuery(GetLatestFullBackupID(tt.args.CleanDaysOlder)).WillReturnError(sql.ErrNoRows)
+		case tt.name == "QueryFileDataFailed":
+			var backupID string = "12345678890"
+			rows1 := sqlmock.NewRows([]string{"BACKUP_ID"}).AddRow(backupID)
+			mock.ExpectQuery(GetLatestFullBackupID(tt.args.CleanDaysOlder)).WillReturnRows(rows1)
+			mock.ExpectQuery(GetBackupFileData(backupID)).WillReturnError(fmt.Errorf("Some DB error"))
+		case tt.name == "NothingToDelete":
+			var backupID string = "12345678890"
+			rows1 := sqlmock.NewRows([]string{"BACKUP_ID"}).AddRow(backupID)
+			rows2 := sqlmock.NewRows([]string{"ENTRY", "COUNT", "BYTES"})
+			mock.ExpectQuery(GetLatestFullBackupID(tt.args.CleanDaysOlder)).WillReturnRows(rows1)
+			mock.ExpectQuery(GetBackupFileData(backupID)).WillReturnRows(rows2)
+		case tt.name == "CleanFailed":
+			var backupID string = "12345678890"
+			rows1 := sqlmock.NewRows([]string{"BACKUP_ID"}).AddRow(backupID)
+			rows2 := sqlmock.NewRows([]string{"ENTRY", "COUNT", "BYTES"}).AddRow("complete data backup", 10, 100000000).AddRow("log backup", 100, 100000000)
+			mock.ExpectQuery(GetLatestFullBackupID(tt.args.CleanDaysOlder)).WillReturnRows(rows1)
+			mock.ExpectQuery(GetBackupFileData(backupID)).WillReturnRows(rows2)
+			mock.ExpectExec(GetBackupDelete(backupID)).WillReturnError(fmt.Errorf("Some DB error"))
+		case tt.name == "DeleteFailed":
+			var backupID string = "12345678890"
+			rows1 := sqlmock.NewRows([]string{"BACKUP_ID"}).AddRow(backupID)
+			rows2 := sqlmock.NewRows([]string{"ENTRY", "COUNT", "BYTES"}).AddRow("complete data backup", 10, 100000000).AddRow("log backup", 100, 100000000)
+			mock.ExpectQuery(GetLatestFullBackupID(tt.args.CleanDaysOlder)).WillReturnRows(rows1)
+			mock.ExpectQuery(GetBackupFileData(backupID)).WillReturnRows(rows2)
+			mock.ExpectExec(GetBackupDeleteComplete(backupID)).WillReturnError(fmt.Errorf("Some DB error"))
+		default:
+			continue
+
+		}
+
+		t.Run(tt.name, func(t *testing.T) {
+			if err := tt.dbc.CleanBackupFunc(tt.args.lc, tt.args.CleanDaysOlder, tt.args.delete, tt.args.dryrun); (err != nil) != tt.wantErr {
+				t.Errorf("DbConfig.CleanBackupFunc() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+//	tests := []struct {
+//		name    string
+//		args    args
+//		wantErr bool
+//	}{
+//		{"Get Backup Delete Complete Failed", args{lc, "db@sid", db1, 28, true, false}, true},
+//		{"Get Backup Delete Failed", args{lc, "db@sid", db1, 28, false, false}, true},
+//	}
+//	for _, tt := range tests {
+//
+//			} else if tt.name == "Get Backup Delete Complete Failed" {
+//			var backupID string = "12345678890"
+//			rows1 := sqlmock.NewRows([]string{"BACKUP_ID"}).AddRow(backupID)
+//			rows2 := sqlmock.NewRows([]string{"ENTRY", "COUNT", "BYTES"}).AddRow("complete data backup", 10, 100000000).AddRow("log backup", 100, 100000000)
+//			mock.ExpectQuery(GetLatestFullBackupID(tt.args.TrncDaysOlder)).WillReturnRows(rows1)
+//			mock.ExpectQuery(GetBackupFileData(backupID)).WillReturnRows(rows2)
+//			mock.ExpectExec(GetBackupDeleteComplete(backupID)).WillReturnError(fmt.Errorf("Some DB error"))
+//		} else if tt.name == "Get Backup Delete Failed" {
+//			var backupID string = "12345678890"
+//			rows1 := sqlmock.NewRows([]string{"BACKUP_ID"}).AddRow(backupID)
+//			rows2 := sqlmock.NewRows([]string{"ENTRY", "COUNT", "BYTES"}).AddRow("complete data backup", 10, 100000000).AddRow("log backup", 100, 100000000)
+//			mock.ExpectQuery(GetLatestFullBackupID(tt.args.TrncDaysOlder)).WillReturnRows(rows1)
+//			mock.ExpectQuery(GetBackupFileData(backupID)).WillReturnRows(rows2)
+//			mock.ExpectExec(GetBackupDelete(backupID)).WillReturnError(fmt.Errorf("Some DB error"))
+//		} else {
+//			return
+//		}
+//
+//		t.Run(tt.name, func(t *testing.T) {
+//			if err := TruncateBackupCatalog(tt.args.lc, tt.args.name, tt.args.hdb, tt.args.TrncDaysOlder, tt.args.delete, tt.args.dryrun); (err != nil) != tt.wantErr {
+//				t.Errorf("TruncateBackupCatalog() error = %v, wantErr %v", err, tt.wantErr)
+//			}
+//		})
+//	}
+//	quit <- true
+//}
 
 func TestClearAlert(t *testing.T) {
 	/*Mock DB*/
