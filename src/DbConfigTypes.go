@@ -32,7 +32,7 @@ func (hdb DbConfig) Dsn() string {
 	return fmt.Sprintf("hdb://%s:%s@%s:%d", hdb.Username, hdb.Password, hdb.Hostname, hdb.Port)
 }
 
-//helper function that populates
+//helper function that connects to the target database and populates the DbConfig.db struct.
 func (hdb *DbConfig) NewDb() error {
 	var err error
 	hdb.db, err = sql.Open("hdb", hdb.Dsn())
