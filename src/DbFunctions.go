@@ -218,17 +218,17 @@ func (dbc *DbConfig) CleanBackupFunc(lc chan<- LogMessage, CleanDaysOlder uint, 
 }
 
 //This function deletes alerts from the table _SYS_STATISTICS.STATISTICS_ALERTS_BASE.  Alerts are deleted if they are older than
-//the given number of days in the DeleteOlderDays argument.  No changes are made to the database if the dryrun argument is set to true
-func ClearAlert(lc chan<- LogMessage, name string, hdb *sql.DB, DeleteOlderDays uint, dryrun bool) error {
-	fname := fmt.Sprintf("%s:%s", name, "ClearAlert")
+//the given number of days in the CleanDaysOlder argument.  No changes are made to the database if the dryrun argument is set to true
+func (dbc *DbConfig) ClearAlertFunc(lc chan<- LogMessage, CleanDaysOlder uint, dryrun bool) error {
+	fname := fmt.Sprintf("%s:%s", dbc.Name, "ClearAlert")
 	lc <- LogMessage{fname, "Starting", true}
 	if dryrun {
 		lc <- LogMessage{fname, "Dry run enabled, no changes will be made", false}
 	}
 	/*Find how many alerts there are that match the deletion criteria*/
 	var ac uint
-	lc <- LogMessage{fname, fmt.Sprintf("Performing query:%s", GetAlertCount(DeleteOlderDays)), true}
-	err := hdb.QueryRow(GetAlertCount(DeleteOlderDays)).Scan(&ac)
+	lc <- LogMessage{fname, fmt.Sprintf("Performing query:%s", GetAlertCount(CleanDaysOlder)), true}
+	err := dbc.db.QueryRow(GetAlertCount(CleanDaysOlder)).Scan(&ac)
 	switch {
 	case err == sql.ErrNoRows:
 		lc <- LogMessage{fname, "DB failed to count rows", false}
@@ -250,13 +250,13 @@ func ClearAlert(lc chan<- LogMessage, name string, hdb *sql.DB, DeleteOlderDays 
 
 	/*Attempt to delete the records*/
 	if !dryrun {
-		_, err = hdb.Exec(GetAlertDelete(DeleteOlderDays))
+		_, err = dbc.db.Exec(GetAlertDelete(CleanDaysOlder))
 		if err != nil {
-			lc <- LogMessage{name, "Query to remove alerts failed", false}
-			lc <- LogMessage{name, err.Error(), true}
+			lc <- LogMessage{fname, "Query to remove alerts failed", false}
+			lc <- LogMessage{fname, err.Error(), true}
 			return err
 		}
-		lc <- LogMessage{name, fmt.Sprintf("Successfully deleted %d alerts", ac), false}
+		lc <- LogMessage{fname, fmt.Sprintf("Successfully deleted %d alerts", ac), false}
 	}
 	return nil
 }
@@ -264,8 +264,8 @@ func ClearAlert(lc chan<- LogMessage, name string, hdb *sql.DB, DeleteOlderDays 
 //This function deletes free logsegments from the log volume.  Performing this task will reduce the disk space used in the log volume
 //but may also cause a minor IO penalty when new new log segments need to be created.  It is more important to run this function is an MDC
 //environemt than a non-MDC one.
-func ReclaimLog(lc chan<- LogMessage, name string, hdb *sql.DB, dryrun bool) error {
-	fname := fmt.Sprintf("%s:%s", name, "ReclaimLog")
+func (dbc *DbConfig) ReclaimLogFunc(lc chan<- LogMessage, dryrun bool) error {
+	fname := fmt.Sprintf("%s:%s", dbc.Name, "ReclaimLog")
 	lc <- LogMessage{fname, "Starting", true}
 	if dryrun {
 		lc <- LogMessage{fname, "Dry run enabled, no changes will be made", false}
@@ -273,7 +273,7 @@ func ReclaimLog(lc chan<- LogMessage, name string, hdb *sql.DB, dryrun bool) err
 	var count uint
 	var bytes uint64
 	lc <- LogMessage{fname, fmt.Sprintf("Performing Query:%s", QUERY_GetFeeLogSegments), true}
-	err := hdb.QueryRow(QUERY_GetFeeLogSegments).Scan(&count, &bytes)
+	err := dbc.db.QueryRow(QUERY_GetFeeLogSegments).Scan(&count, &bytes)
 	switch {
 	case err == sql.ErrNoRows:
 		lc <- LogMessage{fname, "No rows produced by query", false}
@@ -289,7 +289,7 @@ func ReclaimLog(lc chan<- LogMessage, name string, hdb *sql.DB, dryrun bool) err
 
 	if !dryrun {
 		lc <- LogMessage{fname, fmt.Sprintf("Performing Query:%s", QUERY_ReclaimLog), true}
-		_, err = hdb.Exec(QUERY_ReclaimLog)
+		_, err = dbc.db.Exec(QUERY_ReclaimLog)
 		if err != nil {
 			lc <- LogMessage{fname, "Query produced a database error", false}
 			lc <- LogMessage{fname, err.Error(), true}
@@ -298,23 +298,22 @@ func ReclaimLog(lc chan<- LogMessage, name string, hdb *sql.DB, dryrun bool) err
 
 		lc <- LogMessage{fname, "Log Reclaim was successful.", false}
 	}
-
 	return nil
 }
 
 //Function that removes old audit events from the audit table.
-func TruncateAuditLog(lc chan<- LogMessage, name string, hdb *sql.DB, daysToKeep uint, dryrun bool) error {
+func (dbc *DbConfig) CleanAuditFunc(lc chan<- LogMessage, CleanDaysOlder uint, dryrun bool) error {
 
-	fname := fmt.Sprintf("%s:%s", name, "TruncateAuditLog")
+	fname := fmt.Sprintf("%s:%s", dbc.Name, "CleanAuditLog")
 	lc <- LogMessage{fname, "Starting", true}
 	if dryrun {
 		lc <- LogMessage{fname, "Dry run enabled, no changes will be made", false}
 	}
 
 	//Get the number of items to be removed
-	lc <- LogMessage{fname, fmt.Sprintf("Performing query:%s", GetAuditCount(daysToKeep)), true}
+	lc <- LogMessage{fname, fmt.Sprintf("Performing query:%s", GetAuditCount(CleanDaysOlder)), true}
 	var auditCount uint
-	err := hdb.QueryRow(GetAuditCount(daysToKeep)).Scan(&auditCount)
+	err := dbc.db.QueryRow(GetAuditCount(CleanDaysOlder)).Scan(&auditCount)
 	switch {
 	case err == sql.ErrNoRows:
 		lc <- LogMessage{fname, "No rows produced by query", false}
@@ -339,9 +338,9 @@ func TruncateAuditLog(lc chan<- LogMessage, name string, hdb *sql.DB, daysToKeep
 	in the ALTER SYSTEM CLEAR AUDIT LOG UNIT .... command.
 	Therefore we need to pass the time argument in a string.  We don't want to use the local time as the DB could be different
 	So we'll run a query the DB for the time and feed it back in.*/
-	lc <- LogMessage{fname, fmt.Sprintf("Performing Query:%s", GetDatetime(daysToKeep)), true}
+	lc <- LogMessage{fname, fmt.Sprintf("Performing Query:%s", GetDatetime(CleanDaysOlder)), true}
 	var dateString string
-	err = hdb.QueryRow(GetDatetime(daysToKeep)).Scan(&dateString)
+	err = dbc.db.QueryRow(GetDatetime(CleanDaysOlder)).Scan(&dateString)
 	switch {
 	case err == sql.ErrNoRows:
 		lc <- LogMessage{fname, "No rows produced by query", false}
@@ -361,11 +360,11 @@ func TruncateAuditLog(lc chan<- LogMessage, name string, hdb *sql.DB, daysToKeep
 	}
 
 	if !dryrun {
-		lc <- LogMessage{name, fmt.Sprintf("Performing Query:%s", GetTruncateAuditLog(dateParts[0])), true}
-		_, err = hdb.Exec(GetTruncateAuditLog(dateParts[0]))
+		lc <- LogMessage{fname, fmt.Sprintf("Performing Query:%s", GetTruncateAuditLog(dateParts[0])), true}
+		_, err = dbc.db.Exec(GetTruncateAuditLog(dateParts[0]))
 		if err != nil {
-			lc <- LogMessage{name, "Clean audit log query failed", false}
-			lc <- LogMessage{name, err.Error(), true}
+			lc <- LogMessage{fname, "Clean audit log query failed", false}
+			lc <- LogMessage{fname, err.Error(), true}
 			return fmt.Errorf("db error")
 		}
 	}
@@ -373,15 +372,15 @@ func TruncateAuditLog(lc chan<- LogMessage, name string, hdb *sql.DB, daysToKeep
 	return nil
 }
 
-func CleanDataVolume(lc chan<- LogMessage, name string, hdb *sql.DB, dryrun bool) error {
-	fname := fmt.Sprintf("%s:%s", name, "CleanDataVolume")
+func (dbc *DbConfig) CleanDataVolumeFunc(lc chan<- LogMessage, dryrun bool) error {
+	fname := fmt.Sprintf("%s:%s", dbc.Name, "CleanDataVolume")
 	lc <- LogMessage{fname, "Starting", true}
 	if dryrun {
 		lc <- LogMessage{fname, "Dry run enabled, no changes will be made", false}
 	}
 
 	/*Get the information about each datavolume*/
-	rows, err := hdb.Query(QUERY_GetDataVolume)
+	rows, err := dbc.db.Query(QUERY_GetDataVolume)
 	if err != nil {
 		lc <- LogMessage{fname, "Query Failed", true}
 		lc <- LogMessage{fname, err.Error(), true}
@@ -427,7 +426,7 @@ func CleanDataVolume(lc chan<- LogMessage, name string, hdb *sql.DB, dryrun bool
 				continue
 			} else {
 				lc <- LogMessage{fname, "Cleaning required, data volume is more than 50% whitespace", true}
-				_, err = hdb.Exec(GetCleanDataVolume(v.Host, v.Port))
+				_, err = dbc.db.Exec(GetCleanDataVolume(v.Host, v.Port))
 				if err != nil {
 					lc <- LogMessage{fname, "Failed to clean data volume", false}
 					lc <- LogMessage{fname, err.Error(), true}
