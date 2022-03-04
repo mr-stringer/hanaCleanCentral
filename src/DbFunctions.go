@@ -79,9 +79,9 @@ func (dbc *DbConfig) CleanTraceFilesFunc(lc chan<- LogMessage, CleanDaysOlder ui
 	/*Try and remove the files one by one to increase clarity in the logs*/
 	for _, v := range TraceFiles {
 
-		lc <- LogMessage{fname, fmt.Sprintf("Performing Query'%s'", GetRemoveTrace(v.Hostname, v.TraceFile)), true}
 		/*do nothing destructive if dryrun enabled*/
 		if !dryrun {
+			lc <- LogMessage{fname, fmt.Sprintf("Performing Query'%s'", GetRemoveTrace(v.Hostname, v.TraceFile)), true}
 			_, err := dbc.db.Exec(GetRemoveTrace(v.Hostname, v.TraceFile))
 			if err != nil {
 				lc <- LogMessage{fname, fmt.Sprintf("The tracefile '%s' on host '%s' could not be removed, it may be open!  This will be retried next time.", v.TraceFile, v.Hostname), true}
