@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	_ "github.com/SAP/go-hdb/driver"
@@ -17,28 +18,29 @@ func main() {
 	defer close(quit)
 	go Logger(ac, lc, quit)
 
-	log.Printf("HanaCleanCentral initalising\n")
-	log.Printf("Configuration file = %s\n", ac.ConfigFile)
-	log.Printf("Verbose mode = %t\n", ac.Verbose)
-	log.Printf("Dryrun mode = %t\n", ac.DryRun)
-	log.Printf("Getting Config")
+	lc <- LogMessage{"HCC", "HanaCleanCentral initalising", false}
+	lc <- LogMessage{"HCC", fmt.Sprintf("Configuration file = %s", ac.ConfigFile), false}
+	lc <- LogMessage{"HCC", fmt.Sprintf("Verbose mode = %t", ac.Verbose), false}
+	lc <- LogMessage{"HCC", fmt.Sprintf("Dryrun mode = %t", ac.DryRun), false}
+	lc <- LogMessage{"HCC", "Getting Config", false}
 
 	cnf, err := GetConfigFromFile(lc, ac.ConfigFile)
 	if err != nil {
+		lc <- LogMessage{"HCC", fmt.Sprintf("%s\n", err.Error()), false}
 		quit <- true
-		log.Fatal(err)
 	}
 
 	/*check config for duplicates*/
 	err = cnf.CheckForDupeNames()
 	if err != nil {
-		log.Printf("%s\n", err.Error())
+		lc <- LogMessage{"HCC", fmt.Sprintf("%s\n", err.Error()), false}
+		quit <- true
 		return
 	}
 
 	log.Printf("Found a valid config for %d databases\n", len(cnf.Databases))
 
-	//basic ranging over DBs found
+	//basic ranging over DBs found - requires changes to support parallel execution
 	for _, dbc := range cnf.Databases {
 
 		/*Get password from environment if password not set*/
@@ -50,76 +52,99 @@ func main() {
 			}
 		}
 
+		/*Initialise and test connection*/
 		err := dbc.NewDb()
 		if err != nil {
-			log.Printf("%s:Could not connect to configured database\n", dbc.Name)
-			log.Printf("%s:Check the configuration details and try again.  Full error message:", dbc.Name)
-			log.Print(err.Error())
-			log.Printf("%s:Cannot process any tasks for this databases\n", dbc.Name)
+			lc <- LogMessage{dbc.Name, fmt.Sprintln("Could not connect to configured database"), false}
+			lc <- LogMessage{dbc.Name, fmt.Sprintln("Check the configuration details and try again.  Full error message:"), false}
+			lc <- LogMessage{dbc.Name, fmt.Sprintf("%s\n", err.Error()), false}
+			lc <- LogMessage{dbc.Name, fmt.Sprintln("Cannot process any tasks for this databases"), false}
 			continue
 		}
 
+		/*Get and print version - this may be used in later versions to test compatability*/
 		v, err := dbc.HanaVersionFunc(lc)
 		if err != nil {
-			log.Printf("%s:Could not get HANA version of configured database\n", dbc.Name)
-			log.Printf("%s:Full error message:", dbc.Name)
-			log.Print(err.Error())
-			log.Printf("%s:Will not process any tasks for this databases\n", dbc.Name)
+			lc <- LogMessage{dbc.Name, fmt.Sprintln("Could not get HANA version of configured database"), false}
+			lc <- LogMessage{dbc.Name, fmt.Sprintln("Full error message:"), false}
+			lc <- LogMessage{dbc.Name, fmt.Sprintf("%s\n", err.Error()), false}
+			lc <- LogMessage{dbc.Name, fmt.Sprintln("Will not process any tasks for this databases"), false}
 			continue
 		}
-		log.Printf("%s:Hana Version found %s\n", dbc.Name, v)
+		lc <- LogMessage{dbc.Name, fmt.Sprintf("Hana Version found %s", v), false}
 
-		//	err = TruncateTraceFiles(lc, dbc.Name, db, dbc.RetainTraceDays, ac.DryRun)
-		//	if err != nil {
-		//		log.Printf("%s:Error occurred whilst trying to remove old tracesfiles", dbc.Name)
-		//		log.Printf("%s:Full error message:", dbc.Name)
-		//		log.Print(err.Error())
-		//		log.Printf("%s:Will not process any tasks for this databases\n", dbc.Name)
-		//		continue
-		//	}
-		//
-		//	err = TruncateBackupCatalog(lc, dbc.Name, db, dbc.RetainBackupCatalogDays, dbc.DeleteOldBackups, ac.DryRun)
-		//	if err != nil {
-		//		log.Printf("%s:Backup catalog truncation failed", dbc.Name)
-		//	}
-		//
-		//	if dbc.CleanAlerts {
-		//		err = ClearAlert(lc, dbc.Name, db, dbc.RetainAlertsDays, ac.DryRun)
-		//		if err != nil {
-		//			lc <- LogMessage{dbc.Name, "Failed to clear old alerts", false}
-		//		}
-		//	} else {
-		//		lc <- LogMessage{dbc.Name, "Skipping alert clearing", false}
-		//	}
-		//
-		//	if dbc.CleanLogVolume {
-		//		err = ReclaimLog(lc, dbc.Name, db, ac.DryRun)
-		//		if err != nil {
-		//			lc <- LogMessage{dbc.Name, "Failed to reclaim log space", false}
-		//		}
-		//	} else {
-		//		lc <- LogMessage{dbc.Name, "Skipping Reclaim Log", false}
-		//	}
-		//
-		//	if dbc.CleanAudit {
-		//		err = TruncateAuditLog(lc, dbc.Name, db, dbc.RetainAuditDays, ac.DryRun)
-		//		if err != nil {
-		//			lc <- LogMessage{dbc.Name, "Failed to reclaim log space", false}
-		//		}
-		//	} else {
-		//		lc <- LogMessage{dbc.Name, "Skipping Reclaim Log", false}
-		//	}
-		//
-		//	if dbc.CleanDataVolume {
-		//		err = CleanDataVolume(lc, dbc.Name, db, ac.DryRun)
-		//		if err != nil {
-		//			lc <- LogMessage{dbc.Name, "One or more errors occurred during data volume cleaning", false}
-		//		}
-		//	} else {
-		//		lc <- LogMessage{dbc.Name, "Skipping Clean Data Volume", false}
-		//	}
+		/*Clean trace files*/
+		if dbc.CleanTrace {
+			err = dbc.CleanTraceFilesFunc(lc, dbc.RetainTraceDays, ac.DryRun)
+			if err != nil {
+				lc <- LogMessage{dbc.Name, fmt.Sprintln("An error occurred trying to clean trace files"), false}
+				lc <- LogMessage{dbc.Name, fmt.Sprintln("Full error message:"), false}
+				lc <- LogMessage{dbc.Name, fmt.Sprintf("%s\n", err.Error()), false}
+			}
+		} else {
+			lc <- LogMessage{dbc.Name, fmt.Sprintln("CleanTrace not enabled for this database"), false}
+		}
+
+		/*Clean backup catalog*/
+		if dbc.CleanBackupCatalog {
+			err = dbc.CleanBackupFunc(lc, dbc.RetainBackupCatalogDays, dbc.DeleteOldBackups, ac.DryRun)
+			if err != nil {
+				lc <- LogMessage{dbc.Name, fmt.Sprintln("An error occurred trying clean backup catalog"), false}
+				lc <- LogMessage{dbc.Name, fmt.Sprintln("Full error message:"), false}
+				lc <- LogMessage{dbc.Name, fmt.Sprintf("%s\n", err.Error()), false}
+			}
+		} else {
+			lc <- LogMessage{dbc.Name, fmt.Sprintln("CleanBackupCatalog not enabled for this database"), false}
+		}
+
+		/*Clean Alerts*/
+		if dbc.CleanAlerts {
+			err = dbc.CleanAlertFunc(lc, dbc.RetainAlertsDays, ac.DryRun)
+			if err != nil {
+				lc <- LogMessage{dbc.Name, fmt.Sprintln("An error occurred trying clean alerts"), false}
+				lc <- LogMessage{dbc.Name, fmt.Sprintln("Full error message:"), false}
+				lc <- LogMessage{dbc.Name, fmt.Sprintf("%s\n", err.Error()), false}
+			}
+		} else {
+			lc <- LogMessage{dbc.Name, fmt.Sprintln("CleanAlerts not enabled for this database"), false}
+		}
+
+		/*Clean Log Volume*/
+		if dbc.CleanLogVolume {
+			err = dbc.CleanLogFunc(lc, ac.DryRun)
+			if err != nil {
+				lc <- LogMessage{dbc.Name, fmt.Sprintln("An error occurred trying clean log volume"), false}
+				lc <- LogMessage{dbc.Name, fmt.Sprintln("Full error message:"), false}
+				lc <- LogMessage{dbc.Name, fmt.Sprintf("%s\n", err.Error()), false}
+			}
+		} else {
+			lc <- LogMessage{dbc.Name, fmt.Sprintln("CleanLogVolume not enabled for this database"), false}
+		}
+
+		/*Clean Log Volume*/
+		if dbc.CleanAudit {
+			err = dbc.CleanAuditFunc(lc, dbc.RetainAuditDays, ac.DryRun)
+			if err != nil {
+				lc <- LogMessage{dbc.Name, fmt.Sprintln("An error occurred trying clean audit log"), false}
+				lc <- LogMessage{dbc.Name, fmt.Sprintln("Full error message:"), false}
+				lc <- LogMessage{dbc.Name, fmt.Sprintf("%s\n", err.Error()), false}
+			}
+		} else {
+			lc <- LogMessage{dbc.Name, fmt.Sprintln("CleanAudit not enabled for this database"), false}
+		}
+
+		/*Clean Data Volume*/
+		if dbc.CleanDataVolume {
+			err = dbc.CleanDataVolumeFunc(lc, ac.DryRun)
+			if err != nil {
+				lc <- LogMessage{dbc.Name, fmt.Sprintln("An error occurred trying clean data volume log"), false}
+				lc <- LogMessage{dbc.Name, fmt.Sprintln("Full error message:"), false}
+				lc <- LogMessage{dbc.Name, fmt.Sprintf("%s\n", err.Error()), false}
+			}
+		} else {
+			lc <- LogMessage{dbc.Name, fmt.Sprintln("CleanDataVolume not enabled for this database"), false}
+		}
+
 	}
-	//
-	///*flush and quit the logger*/
 	quit <- true
 }

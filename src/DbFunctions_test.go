@@ -282,7 +282,7 @@ func TestDbConfig_CleanBackupFunc(t *testing.T) {
 	}
 }
 
-func TestDbConfig_ClearAlertFunc(t *testing.T) {
+func TestDbConfig_CleanAlertFunc(t *testing.T) {
 	/*Test Setup*/
 	/*Mock DB*/
 	db1, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
@@ -348,15 +348,15 @@ func TestDbConfig_ClearAlertFunc(t *testing.T) {
 		}
 
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.dbc.ClearAlertFunc(tt.args.lc, tt.args.CleanDaysOlder, tt.args.dryrun); (err != nil) != tt.wantErr {
-				t.Errorf("DbConfig.ClearAlertFunc() error = %v, wantErr %v", err, tt.wantErr)
+			if err := tt.dbc.CleanAlertFunc(tt.args.lc, tt.args.CleanDaysOlder, tt.args.dryrun); (err != nil) != tt.wantErr {
+				t.Errorf("DbConfig.CleanAlertFunc() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
 	quit <- true
 }
 
-func TestDbConfig_ReclaimLogFunc(t *testing.T) {
+func TestDbConfig_CleanLogFunc(t *testing.T) {
 	/*Test Setup*/
 	/*Mock DB*/
 	db1, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
@@ -416,8 +416,8 @@ func TestDbConfig_ReclaimLogFunc(t *testing.T) {
 			t.Errorf("Couldn't find DB mocking for test \"%s\"\n", tt.name)
 		}
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.dbc.ReclaimLogFunc(tt.args.lc, tt.args.dryrun); (err != nil) != tt.wantErr {
-				t.Errorf("DbConfig.ReclaimLogFunc() error = %v, wantErr %v", err, tt.wantErr)
+			if err := tt.dbc.CleanLogFunc(tt.args.lc, tt.args.dryrun); (err != nil) != tt.wantErr {
+				t.Errorf("DbConfig.CleanLogFunc() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

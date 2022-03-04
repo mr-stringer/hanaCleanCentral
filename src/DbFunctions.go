@@ -219,8 +219,8 @@ func (dbc *DbConfig) CleanBackupFunc(lc chan<- LogMessage, CleanDaysOlder uint, 
 
 //This function deletes alerts from the table _SYS_STATISTICS.STATISTICS_ALERTS_BASE.  Alerts are deleted if they are older than
 //the given number of days in the CleanDaysOlder argument.  No changes are made to the database if the dryrun argument is set to true
-func (dbc *DbConfig) ClearAlertFunc(lc chan<- LogMessage, CleanDaysOlder uint, dryrun bool) error {
-	fname := fmt.Sprintf("%s:%s", dbc.Name, "ClearAlert")
+func (dbc *DbConfig) CleanAlertFunc(lc chan<- LogMessage, CleanDaysOlder uint, dryrun bool) error {
+	fname := fmt.Sprintf("%s:%s", dbc.Name, "CleanAlert")
 	lc <- LogMessage{fname, "Starting", true}
 	if dryrun {
 		lc <- LogMessage{fname, "Dry run enabled, no changes will be made", false}
@@ -264,8 +264,8 @@ func (dbc *DbConfig) ClearAlertFunc(lc chan<- LogMessage, CleanDaysOlder uint, d
 //This function deletes free logsegments from the log volume.  Performing this task will reduce the disk space used in the log volume
 //but may also cause a minor IO penalty when new new log segments need to be created.  It is more important to run this function is an MDC
 //environemt than a non-MDC one.
-func (dbc *DbConfig) ReclaimLogFunc(lc chan<- LogMessage, dryrun bool) error {
-	fname := fmt.Sprintf("%s:%s", dbc.Name, "ReclaimLog")
+func (dbc *DbConfig) CleanLogFunc(lc chan<- LogMessage, dryrun bool) error {
+	fname := fmt.Sprintf("%s:%s", dbc.Name, "CleanLog")
 	lc <- LogMessage{fname, "Starting", true}
 	if dryrun {
 		lc <- LogMessage{fname, "Dry run enabled, no changes will be made", false}
@@ -296,7 +296,7 @@ func (dbc *DbConfig) ReclaimLogFunc(lc chan<- LogMessage, dryrun bool) error {
 			return fmt.Errorf("db error")
 		}
 
-		lc <- LogMessage{fname, "Log Reclaim was successful.", false}
+		lc <- LogMessage{fname, "Log Volume Cleaning was successful.", false}
 	}
 	return nil
 }
