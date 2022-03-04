@@ -28,6 +28,7 @@ func main() {
 	if err != nil {
 		lc <- LogMessage{"HCC", fmt.Sprintf("%s\n", err.Error()), false}
 		quit <- true
+		return
 	}
 
 	/*check config for duplicates*/
