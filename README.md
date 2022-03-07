@@ -2,7 +2,7 @@
 
 [![Go](https://github.com/mr-stringer/hanaCleanCentral/actions/workflows/go.yml/badge.svg)](https://github.com/mr-stringer/hanaCleanCentral/actions/workflows/go.yml)
 
-hanaCleanCenteral is a centralised maintenance tool for the HANA database.  Hereafter referred to as HCC.
+hanaCleanCentral is a centralised maintenance tool for the HANA database.  Hereafter referred to as HCC.
 
 ## Do not use, yet
 
@@ -10,9 +10,9 @@ This project is in development.  There are no releases at this time.  Once relea
 
 ## Introduction
 
-HCC is based on [hanacleaner](https://github.com/chriselswede/hanacleaner).  This project aims to perform a similar range of tasks that hanacleaner performs but centralised.  Rather than being installed on each HANA database, HCC will be installed on a central server and remotely housekeep many HANA instances.  HCC can be configured to perform maintenance on remote databases in a series or parallel.
+HCC is based on [hanacleaner](https://github.com/chriselswede/hanacleaner).  This project aims to perform a similar range of tasks that hanacleaner performs but centralised.  Rather than being installed on each HANA database, HCC will be installed on a central server and remotely clean many HANA instances.  HCC can be configured to perform maintenance on remote databases in a series or parallel.
 
-## What does HanaCleanCenral do?
+## What does HanaCleanCentral do?
 
 HCC is currently capable of performing the following tasks:
 
@@ -26,7 +26,7 @@ HCC is currently capable of performing the following tasks:
 
 The following table describes the differences between hanacleaner and HCC.  You can use this table to help you decide which project is right for you.
 
-| Area | hanacleaner | hanaCleanCentral | Desscription |
+| Area | hanacleaner | hanaCleanCentral | Description |
 |---|---|---|---|
 | Deployment | Local | Central | hanacleaner is deployed locally on each database server that is to be managed.  HCC can manage many databases from a single installation |
 | Execution | Uses SQL & OS-level commands | SQL only | hanacleaner can perform more types of tasks as it executes SQL statements and OS level commands.  HCC performs SQL statements only. |
@@ -42,7 +42,7 @@ The following list documents the required privileges for HCC.  This list is like
 |General|Role|`MANAGEMENT`|
 |TraceFile management |Privilege|`TRACE ADMIN`|
 |Backup catalog management|Privilege|`BACKUP OPERATOR`|
-|Log management|Privledge|`LOG ADMIN`|
+|Log management|Privilege|`LOG ADMIN`|
 
 ## Flags and Configuration
 
@@ -51,6 +51,7 @@ HCC is controlled with a combination of command-line flags and a configuration f
 * -f the location of the configuration file.  Required, defaults to config.json
 * -v verbose.  When used, verbose logging is enabled, defaults to off
 * -d dry run.  When used, only read-only queries will be executed.  This mode will make no changes to the target databases.
+* -p print effective config, When used, the application configuration is printed to screen and the application quits.  Useful for understand the impact of the config inheritance.
 
 The -f flag specifies the configuration.  HCC expects the configuration file passed to it to be a JSON representation of the following struct:
 
@@ -121,7 +122,7 @@ An example of a configuration file a single database is provided below.
       "Hostname": "hanadb.mydomain.int",
       "Port": 30015,
       "Username": "hccuser",
-      "Password": "ReallzyKoolPassw0rd"
+      "Password": "AnUnsuitablePassw0rd"
     }
   ]
 }
