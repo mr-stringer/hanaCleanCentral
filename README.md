@@ -51,7 +51,7 @@ HCC is controlled with a combination of command-line flags and a configuration f
 * -f the location of the configuration file.  Required, defaults to config.json
 * -v verbose.  When used, verbose logging is enabled, defaults to off
 * -d dry run.  When used, only read-only queries will be executed.  This mode will make no changes to the target databases.
-* -p print effective config, When used, the application configuration is printed to screen and the application quits.  Useful for understand the impact of the config inheritance.
+* -p print effective config, When used, the application configuration is printed to screen and the application quits.  Useful for understand the impact of the config inheritance.  Please note, passwords will not be printed for security purposes.
 
 The -f flag specifies the configuration.  HCC expects the configuration file passed to it to be a JSON representation of the following struct:
 
@@ -78,7 +78,7 @@ The `Databases` field represents a slice (or array in JSON) of DbConfig structs.
   Hostname                string // Hostname or IP address of the primary HANA node
   Port                    uint   // Port of the HANA DB
   Username                string // HANA DB user name to use
-  Password                string // Password for HANA DB user
+  password                string // Password for HANA DB user
   CleanTrace              bool   // If true, trace file management will be enabled
   RetainTraceDays         uint   // Specifies the number of days of trace files to retain
   CleanBackupCatalog      bool   // If true, backup catalog truncation will be enabled

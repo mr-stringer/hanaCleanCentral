@@ -56,7 +56,7 @@ func main() {
 	for _, dbc := range cnf.Databases {
 
 		/*Get password from environment if password not set*/
-		if dbc.Password == "" {
+		if dbc.password == "" {
 			err = dbc.GetPasswordFromEnv()
 			if err != nil {
 				lc <- LogMessage{dbc.Name, "No password for DB in environment or config file, skipping this DB", false}

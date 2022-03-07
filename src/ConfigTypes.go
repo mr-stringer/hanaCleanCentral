@@ -53,9 +53,9 @@ func (c *Config) CheckForDupeNames() error {
 
 func (c *Config) PrintConfig() error {
 
-	for i := 0; i < len(c.Databases); i++ {
-		c.Databases[i].Password = "************"
-	}
+	//for i := 0; i < len(c.Databases); i++ {
+	//	c.Databases[i].Password = "************"
+	//}
 
 	/*Marshal to json*/
 	j1, err := json.Marshal(c)

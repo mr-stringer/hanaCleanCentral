@@ -13,7 +13,7 @@ type DbConfig struct {
 	Hostname                string // Hostname or IP address of the primary HANA node
 	Port                    uint   // Port of the HANA DB
 	Username                string // HANA DB user name to use
-	Password                string // Password for HANA DB user
+	password                string // Password for HANA DB user
 	CleanTrace              bool   // If true, trace file management will be enabled - Defaults to false
 	RetainTraceDays         uint   // Specifies the number of days of trace files to retain
 	CleanBackupCatalog      bool   // If true, backup catalog truncation will be enabled - Defaults to false
@@ -29,7 +29,7 @@ type DbConfig struct {
 }
 
 func (hdb DbConfig) Dsn() string {
-	return fmt.Sprintf("hdb://%s:%s@%s:%d", hdb.Username, hdb.Password, hdb.Hostname, hdb.Port)
+	return fmt.Sprintf("hdb://%s:%s@%s:%d", hdb.Username, hdb.password, hdb.Hostname, hdb.Port)
 }
 
 //helper function that connects to the target database and populates the DbConfig.db struct.
@@ -53,8 +53,8 @@ func (hdb *DbConfig) NewDb() error {
 func (db *DbConfig) GetPasswordFromEnv() error {
 
 	log.Printf("Searching for password for %s from environment variable", db.Name)
-	db.Password = os.Getenv(fmt.Sprintf("HCC_%s", db.Name))
-	if db.Password == "" {
+	db.password = os.Getenv(fmt.Sprintf("HCC_%s", db.Name))
+	if db.password == "" {
 		return fmt.Errorf("was not able to source password from %s for the environnement", db.Name)
 	}
 	return nil

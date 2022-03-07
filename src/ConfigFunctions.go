@@ -12,7 +12,7 @@ import (
 //All root level fields must be set, if any are not set the function will return an error.
 //DBs must have the following fields set:	'Name', 'Hostname', 'Port' and 'Username'.  If any of these parameters are not set, an error is returned.
 //If the DB paramerter 'Password' the application will attempt to source it form the environemt.
-//If an error occures the function will return a pointer to an default configuration (all false and 0) and the error
+//If an error occurs the function will return a pointer to an default configuration (all false and 0) and the error
 func GetConfigFromFile(lc chan<- LogMessage, path string) (*Config, error) {
 
 	/* The original method - oh if it were that simple :/
@@ -168,7 +168,7 @@ func GetConfigFromFile(lc chan<- LogMessage, path string) (*Config, error) {
 			return &mt, fmt.Errorf("config error")
 		}
 
-		db.Password, ok = child.Path("Password").Data().(string)
+		db.password, ok = child.Path("Password").Data().(string)
 		if !ok {
 			lc <- LogMessage{"HccConfig", fmt.Sprintf("Cannot parse 'Password' for DB config %d\n", k), false}
 			lc <- LogMessage{"HccConfig", fmt.Sprintf("The password will be sourced from the environmental variable 'HCC_%s'", db.Name), false}
