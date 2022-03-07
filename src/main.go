@@ -39,6 +39,17 @@ func main() {
 		return
 	}
 
+	if ac.PrintConfig {
+		fmt.Printf("Printing application configuration\n")
+		err := cnf.PrintConfig()
+		if err != nil {
+			fmt.Printf("Printing application configuration failed.")
+			fmt.Println(err.Error())
+			return
+		}
+		return
+	}
+
 	log.Printf("Found a valid config for %d databases\n", len(cnf.Databases))
 
 	//basic ranging over DBs found - requires changes to support parallel execution

@@ -24,7 +24,7 @@ func TestDbConfig_HanaVersionFunc(t *testing.T) {
 	defer close(lc)
 	defer close(quit)
 
-	go Logger(AppConfig{"file", true, false}, lc, quit)
+	go Logger(AppConfig{"file", true, false, false}, lc, quit)
 
 	/*Types*/
 	type args struct {
@@ -83,7 +83,7 @@ func TestDbConfig_CleanTraceFilesFunc(t *testing.T) {
 	defer close(lc)
 	defer close(quit)
 
-	go Logger(AppConfig{"file", true, false}, lc, quit)
+	go Logger(AppConfig{"file", true, false, false}, lc, quit)
 
 	/*Args*/
 	type args struct {
@@ -197,7 +197,7 @@ func TestDbConfig_CleanBackupFunc(t *testing.T) {
 	defer close(lc)
 	defer close(quit)
 
-	go Logger(AppConfig{"file", true, false}, lc, quit)
+	go Logger(AppConfig{"file", true, false, false}, lc, quit)
 
 	/*args*/
 	type args struct {
@@ -298,7 +298,7 @@ func TestDbConfig_CleanAlertFunc(t *testing.T) {
 	defer close(lc)
 	defer close(quit)
 
-	go Logger(AppConfig{"file", true, false}, lc, quit)
+	go Logger(AppConfig{"file", true, false, false}, lc, quit)
 
 	/*args*/
 	type args struct {
@@ -372,7 +372,7 @@ func TestDbConfig_CleanLogFunc(t *testing.T) {
 	defer close(lc)
 	defer close(quit)
 
-	go Logger(AppConfig{"file", true, false}, lc, quit)
+	go Logger(AppConfig{"file", true, false, false}, lc, quit)
 
 	/*Args*/
 	type args struct {
@@ -440,7 +440,7 @@ func TestDbConfig_CleanAuditFunc(t *testing.T) {
 	defer close(lc)
 	defer close(quit)
 
-	go Logger(AppConfig{"file", true, false}, lc, quit)
+	go Logger(AppConfig{"file", true, false, false}, lc, quit)
 
 	/*args*/
 	type args struct {
@@ -542,7 +542,7 @@ func TestDbConfig_CleanDataVolumeFunc(t *testing.T) {
 	defer close(lc)
 	defer close(quit)
 
-	go Logger(AppConfig{"file", true, false}, lc, quit)
+	go Logger(AppConfig{"file", true, false, false}, lc, quit)
 
 	/*args*/
 	type args struct {

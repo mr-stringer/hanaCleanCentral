@@ -12,7 +12,7 @@ func TestGetConfigFromFile(t *testing.T) {
 	quit := make(chan bool)
 	defer close(lc)
 	defer close(quit)
-	go Logger(AppConfig{"file", false, false}, lc, quit)
+	go Logger(AppConfig{"file", false, false, false}, lc, quit)
 
 	type args struct {
 		lc   chan<- LogMessage

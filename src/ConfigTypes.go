@@ -1,15 +1,18 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
 )
 
 //Application configuration parameters to be shared with functions
 type AppConfig struct {
-	ConfigFile string //the location of the config file
-	Verbose    bool   //used for verbose logging
-	DryRun     bool   //used for non-destructive testing
+	ConfigFile  string //the location of the config file
+	Verbose     bool   //used for verbose logging
+	DryRun      bool   //used for non-destructive testing
+	PrintConfig bool   //used to print effective config
 }
 
 //Top level configuration for hanaCleanCentral
@@ -24,7 +27,7 @@ type Config struct {
 	RetainAlertsDays        uint // Specifies the number of days of alerts to retain
 	CleanLogVolume          bool // If true, free log segments will be removed from the file system
 	CleanAudit              bool // If true, old audit records will be deleted
-	RetainAuditDays         uint // Specifes the number of days of audit log to retain
+	RetainAuditDays         uint // Specifies the number of days of audit log to retain
 	CleanDataVolume         bool // If true, the data volume will be defragemented, currently uses default size of 120
 	Databases               []DbConfig
 }
@@ -45,5 +48,26 @@ func (c *Config) CheckForDupeNames() error {
 			return fmt.Errorf("duplicate database name in configuration")
 		}
 	}
+	return nil
+}
+
+func (c *Config) PrintConfig() error {
+
+	for i := 0; i < len(c.Databases); i++ {
+		c.Databases[i].Password = "************"
+	}
+
+	/*Marshal to json*/
+	j1, err := json.Marshal(c)
+	if err != nil {
+		return err
+	}
+	/*Make pretty*/
+	var prettyJson bytes.Buffer
+	err = json.Indent(&prettyJson, j1, "", "  ")
+	if err != nil {
+		return err
+	}
+	fmt.Println(prettyJson.String())
 	return nil
 }
