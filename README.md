@@ -43,6 +43,24 @@ The following list documents the required privileges for HCC.  This list is like
 |TraceFile management |Privilege|`TRACE ADMIN`|
 |Backup catalog management|Privilege|`BACKUP OPERATOR`|
 |Log management|Privilege|`LOG ADMIN`|
+|Audit management|Privilege|`AUDIT OPERATOR`|
+|Data volume management|Privilege|`RESOURCE OPERATOR`|
+|Alert management|Privilege|SELECT and DELETE on "_SYS_STATISTICS"."STATISTICS_ALERTS_BASE"|
+
+All privileges can be applied with the following SQL, however, you should only apply the privileges for the functions you intend to use.  You will also need to modify the SQL to the correct HANA username.
+
+```SQL
+GRANT MONITORING TO HCCADMIN;
+GRANT TRACE ADMIN TO HCCADMIN;
+GRANT BACKUP ADMIN TO HCCADMIN;
+GRANT LOG ADMIN TO HCCADMIN;
+GRANT AUDIT OPERATOR TO HCCADMIN;
+GRANT RESOURCE ADMIN TO HCCADMIN;
+GRANT SELECT ON "_SYS_STATISTICS"."STATISTICS_ALERTS_BASE" TO HCCADMIN;
+GRANT DELETE ON "_SYS_STATISTICS"."STATISTICS_ALERTS_BASE" TO HCCADMIN;
+```
+
+HCC will check each DB configuration at runtime to ensure that the required privileges are in place.  If not, HCC will log that there are insufficient privileges to continue and will perform no maintenance.  HCC make no concession for dry run mode.  Even in dry run mode the correct privileges for all configured tasks must be in granted.
 
 ## Flags and Configuration
 

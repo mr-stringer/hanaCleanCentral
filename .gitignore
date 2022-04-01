@@ -3,3 +3,5 @@ hanaCleanCentral
 src/hanaCleanCentral.exe
 src/hanaCleanCentral
 testconfig.json
+privs_needed.md
+privcheck*

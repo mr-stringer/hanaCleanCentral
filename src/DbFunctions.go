@@ -44,8 +44,8 @@ func (dbc *DbConfig) CleanTraceFilesFunc(lc chan<- LogMessage, CleanDaysOlder ui
 	ce to hold results*/
 	TraceFiles := make([]TraceFile, 0)
 
-	/*Get the list of candidate tracefiles where the M time days is greater than the TrncDaysOlder arguments*/
-	//fmt.Printf("%s", GetTraceFileQuery(TrncDaysOlder))
+	/*Get the list of candidate tracefiles where the M time days is greater than the CleanDaysOlder arguments*/
+	//fmt.Printf("%s", GetTraceFileQuery(CleanDaysOlder))
 	lc <- LogMessage{fname, fmt.Sprintf("Performing query:'%s'", GetTraceFileQuery(CleanDaysOlder)), true}
 
 	rows, err := dbc.db.Query(GetTraceFileQuery(CleanDaysOlder))
@@ -450,4 +450,110 @@ func (dbc *DbConfig) CleanDataVolumeFunc(lc chan<- LogMessage, dryrun bool) erro
 		lc <- LogMessage{fname, fmt.Sprintf("Clean data volume finished with %d errors", failures), false}
 		return fmt.Errorf("%d data volume clean errors recorded", failures)
 	}
+}
+
+//CheckPrivileges checks which privleges are supplied to the user.  If the users
+//doesn't have sufficient privleges to run the functions that are enabled
+//then none will be attempted
+func (dbc *DbConfig) CheckPrivileges(lc chan<- LogMessage) error {
+	fname := fmt.Sprintf("%s:%s", dbc.Name, "CheckPrivileges")
+	lc <- LogMessage{fname, "Starting", true}
+
+	/*Query DB to find all privileges that the user has*/
+	lc <- LogMessage{fname, fmt.Sprintf("Attempting Query:%s", GetPrivCheck(dbc.Username)), true}
+	//Remember that the username given will be in uppercase within HANA tables.
+	rows, err := dbc.db.Query(GetPrivCheck(strings.ToUpper(dbc.Username)))
+	switch {
+	case err == sql.ErrNoRows:
+		lc <- LogMessage{fname, "No rows returned by query", false}
+		return fmt.Errorf("no privileges found for user:%s\n", dbc.Username)
+	case err != nil:
+		lc <- LogMessage{fname, "Database returned an error!", false}
+		return fmt.Errorf("DB error")
+	}
+	defer rows.Close()
+
+	privileges := make(map[string]bool)
+
+	for rows.Next() {
+		var k, v string
+		err := rows.Scan(&k, &v)
+		if err != nil {
+			lc <- LogMessage{fname, "Scan Error", true}
+			lc <- LogMessage{fname, err.Error(), true}
+			/*allow calling function to deal with the error*/
+			return err
+		}
+		switch {
+		case v == "TRUE":
+			privileges[k] = true
+		case v == "FALSE":
+			privileges[k] = false
+		default:
+			lc <- LogMessage{fname, "unknown value from database", true}
+			return fmt.Errorf("privilege check query returned %s, only expected 'TRUE' or 'FALSE',", v)
+		}
+	}
+
+	//for k, v := range privileges {
+	//	lc <- LogMessage{fname, fmt.Sprintf("%s:%v", k, v), false}
+	//}
+
+	/*Now work through the output to see if we have what we need!*/
+	/*MONITORING, nothing works correctly without monitoring*/
+
+	/*Check the all expected fields are in the map*/
+	elements := []string{"MONITORING", "TRACE_ADMIN", "BACKUP_ADMIN", "LOG_ADMIN", "AUDIT_OPERATOR", "RESOURCE_ADMIN", "SELECT_STATISTICS_ALERTS_BASE", "DELETE_STATISTICS_ALERTS_BASE"}
+	for _, v := range elements {
+		_, ok := privileges[v]
+		if !ok {
+			return fmt.Errorf("expected key %s is missing from the privilege map", v)
+		}
+	}
+	_, ok := privileges["MONITORING"]
+	if !ok {
+		return fmt.Errorf("could not find MONITORING in the privilege map")
+	}
+
+	if !privileges["MONITORING"] {
+		return fmt.Errorf("the required role 'MONITORING' has not been granted to the user %s", dbc.Username)
+	}
+
+	/**/
+	/*If CleanTrace is requested but TRACE ADMIN is missing*/
+	if dbc.CleanTrace && !privileges["TRACE_ADMIN"] {
+		return fmt.Errorf("the system privilege 'TRACE ADMIN' is required for the CleanTrace function but has not been granted to the user %s", dbc.Username)
+	}
+
+	/*If CleanBackupCatalog is requested but BACKUP ADMIN is missing*/
+	if dbc.CleanBackupCatalog && !privileges["BACKUP_ADMIN"] {
+		return fmt.Errorf("the system privilege 'BACKUP ADMIN' is required for the CleanBackupCatalog function but has not been granted to the user %s", dbc.Username)
+	}
+
+	/*If CleanLogVolume is requested but BACKUP ADMIN is missing*/
+	if dbc.CleanLogVolume && !privileges["LOG_ADMIN"] {
+		return fmt.Errorf("the system privilege 'LOG ADMIN' is required for the CleanLogVolume function but has not been granted to the user %s", dbc.Username)
+	}
+
+	/*If CleanAudit is requested but AUDIT_OPERATOR is missing*/
+	if dbc.CleanAudit && !privileges["AUDIT_OPERATOR"] {
+		return fmt.Errorf("the system privilege 'AUDIT OPERATOR' is required for the CleanAudit function but has not been granted to the user %s", dbc.Username)
+	}
+
+	/*If CleanDataVolume is requested but RESOURCE ADMIN is missing*/
+	if dbc.CleanDataVolume && !privileges["RESOURCE_ADMIN"] {
+		return fmt.Errorf("the system privilege 'RESOURCE ADMIN' is required for the CleanDataVolume function but has not been granted to the user %s", dbc.Username)
+	}
+
+	/*If CleanAlerts is requested but SELECT_STATISTICS_ALERTS_BASE is missing*/
+	if dbc.CleanAlerts && !privileges["SELECT_STATISTICS_ALERTS_BASE"] {
+		return fmt.Errorf("the SELECT privilege on \"_SYS_STATISTICS\".\"STATISTICS_ALERTS_BASE\" is required for the CleanAlerts function but has not been granted to the user %s", dbc.Username)
+	}
+
+	/*If CleanAlerts is requested but DELETE_STATISTICS_ALERTS_BASE is missing*/
+	if dbc.CleanAlerts && !privileges["DELETE_STATISTICS_ALERTS_BASE"] {
+		return fmt.Errorf("the DELETE privilege on \"_SYS_STATISTICS\".\"STATISTICS_ALERTS_BASE\" is required for the CleanAlerts function but has not been granted to the user %s", dbc.Username)
+	}
+
+	return nil
 }

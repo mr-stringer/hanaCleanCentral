@@ -69,7 +69,7 @@ func main() {
 		if err != nil {
 			lc <- LogMessage{dbc.Name, fmt.Sprintln("Could not connect to configured database"), false}
 			lc <- LogMessage{dbc.Name, fmt.Sprintln("Check the configuration details and try again.  Full error message:"), false}
-			lc <- LogMessage{dbc.Name, fmt.Sprintf("%s\n", err.Error()), false}
+			lc <- LogMessage{dbc.Name, fmt.Sprintf("%s", err.Error()), false}
 			lc <- LogMessage{dbc.Name, fmt.Sprintln("Cannot process any tasks for this databases"), false}
 			continue
 		}
@@ -79,11 +79,19 @@ func main() {
 		if err != nil {
 			lc <- LogMessage{dbc.Name, fmt.Sprintln("Could not get HANA version of configured database"), false}
 			lc <- LogMessage{dbc.Name, fmt.Sprintln("Full error message:"), false}
-			lc <- LogMessage{dbc.Name, fmt.Sprintf("%s\n", err.Error()), false}
+			lc <- LogMessage{dbc.Name, fmt.Sprintf("%s", err.Error()), false}
 			lc <- LogMessage{dbc.Name, fmt.Sprintln("Will not process any tasks for this databases"), false}
 			continue
 		}
 		lc <- LogMessage{dbc.Name, fmt.Sprintf("Hana Version found %s", v), false}
+
+		err = dbc.CheckPrivileges(lc)
+		if err != nil {
+			lc <- LogMessage{dbc.Name, fmt.Sprint("There was a problem checking privileges for this database"), false}
+			lc <- LogMessage{dbc.Name, fmt.Sprint("Full error message:"), false}
+			lc <- LogMessage{dbc.Name, fmt.Sprintf("%s", err.Error()), false}
+			continue
+		}
 
 		/*Clean trace files*/
 		if dbc.CleanTrace {
@@ -91,7 +99,7 @@ func main() {
 			if err != nil {
 				lc <- LogMessage{dbc.Name, fmt.Sprintln("An error occurred trying to clean trace files"), false}
 				lc <- LogMessage{dbc.Name, fmt.Sprintln("Full error message:"), false}
-				lc <- LogMessage{dbc.Name, fmt.Sprintf("%s\n", err.Error()), false}
+				lc <- LogMessage{dbc.Name, fmt.Sprintf("%s", err.Error()), false}
 			}
 		} else {
 			lc <- LogMessage{dbc.Name, fmt.Sprintln("CleanTrace not enabled for this database"), false}
@@ -103,7 +111,7 @@ func main() {
 			if err != nil {
 				lc <- LogMessage{dbc.Name, fmt.Sprintln("An error occurred trying clean backup catalog"), false}
 				lc <- LogMessage{dbc.Name, fmt.Sprintln("Full error message:"), false}
-				lc <- LogMessage{dbc.Name, fmt.Sprintf("%s\n", err.Error()), false}
+				lc <- LogMessage{dbc.Name, fmt.Sprintf("%s", err.Error()), false}
 			}
 		} else {
 			lc <- LogMessage{dbc.Name, fmt.Sprintln("CleanBackupCatalog not enabled for this database"), false}
@@ -115,7 +123,7 @@ func main() {
 			if err != nil {
 				lc <- LogMessage{dbc.Name, fmt.Sprintln("An error occurred trying clean alerts"), false}
 				lc <- LogMessage{dbc.Name, fmt.Sprintln("Full error message:"), false}
-				lc <- LogMessage{dbc.Name, fmt.Sprintf("%s\n", err.Error()), false}
+				lc <- LogMessage{dbc.Name, fmt.Sprintf("%s", err.Error()), false}
 			}
 		} else {
 			lc <- LogMessage{dbc.Name, fmt.Sprintln("CleanAlerts not enabled for this database"), false}
@@ -127,7 +135,7 @@ func main() {
 			if err != nil {
 				lc <- LogMessage{dbc.Name, fmt.Sprintln("An error occurred trying clean log volume"), false}
 				lc <- LogMessage{dbc.Name, fmt.Sprintln("Full error message:"), false}
-				lc <- LogMessage{dbc.Name, fmt.Sprintf("%s\n", err.Error()), false}
+				lc <- LogMessage{dbc.Name, fmt.Sprintf("%s", err.Error()), false}
 			}
 		} else {
 			lc <- LogMessage{dbc.Name, fmt.Sprintln("CleanLogVolume not enabled for this database"), false}
@@ -139,7 +147,7 @@ func main() {
 			if err != nil {
 				lc <- LogMessage{dbc.Name, fmt.Sprintln("An error occurred trying clean audit log"), false}
 				lc <- LogMessage{dbc.Name, fmt.Sprintln("Full error message:"), false}
-				lc <- LogMessage{dbc.Name, fmt.Sprintf("%s\n", err.Error()), false}
+				lc <- LogMessage{dbc.Name, fmt.Sprintf("%s", err.Error()), false}
 			}
 		} else {
 			lc <- LogMessage{dbc.Name, fmt.Sprintln("CleanAudit not enabled for this database"), false}
@@ -151,7 +159,7 @@ func main() {
 			if err != nil {
 				lc <- LogMessage{dbc.Name, fmt.Sprintln("An error occurred trying clean data volume log"), false}
 				lc <- LogMessage{dbc.Name, fmt.Sprintln("Full error message:"), false}
-				lc <- LogMessage{dbc.Name, fmt.Sprintf("%s\n", err.Error()), false}
+				lc <- LogMessage{dbc.Name, fmt.Sprintf("%s", err.Error()), false}
 			}
 		} else {
 			lc <- LogMessage{dbc.Name, fmt.Sprintln("CleanDataVolume not enabled for this database"), false}
