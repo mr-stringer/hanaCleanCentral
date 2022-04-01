@@ -23,6 +23,11 @@ const QUERY_ReclaimLog string = "ALTER SYSTEM RECLAIM LOG"
 //Requires MONITORING role
 const QUERY_GetDataVolume string = "SELECT HOST, PORT, USED_SIZE, TOTAL_SIZE FROM SYS.M_VOLUME_FILES WHERE FILE_TYPE = 'DATA'"
 
+//Query to get the privileges that a database user has.
+//func GetPrivilegesQuery(user string) string {
+//	return fmt.Sprintf("SELECT COUNT(GRANTEE) FROM \"SYS\".\"GRANTED_PRIVILEGES\" WHERE GRANTEE = '%s' AND PRIVILEGE = 'BACKUP OPERATOR'", user)
+//}
+
 //The function returns a string which is used to query the HANA database. The function takes the argument days, this argument is used in the query to define the age of tracefiles
 //that should be returned.  If the days is set to one, only tracefiles that have not been modified in the last 24 hours will be returned.  In addition, they query will only return
 //tracefiles that end "trc" or "gz".  This may change in the future but right now "gz" and "trc" are considered safe for housekeeping.
@@ -94,4 +99,88 @@ func GetTruncateAuditLog(datetime string) string {
 //Function that returns a query that is used to clean (defragment) HANA data volumes.  Must specify hostname and port
 func GetCleanDataVolume(host string, port uint) string {
 	return fmt.Sprintf("ALTER SYSTEM RECLAIM DATAVOLUME '%s:%d' 120 DEFRAGMENT", host, port)
+}
+
+//Function that returns a query that is used to determine if required privileges are in place. Requires a username as input
+func GetPrivCheck(username string) string {
+	return fmt.Sprintf(""+
+		"	SELECT "+
+		"    'MONITORING' AS ROLE,  "+
+		"    CASE  "+
+		"        WHEN COUNT(GRANTEE) = '0' THEN 'FALSE' "+
+		"        ELSE 'TRUE' "+
+		"    END AS RESULT "+
+		"FROM GRANTED_ROLES "+
+		"WHERE GRANTEE = '%s' AND ROLE_NAME = 'MONITORING' "+
+		"UNION ALL "+
+		"SELECT "+
+		"    'TRACE_ADMIN' AS ROLE,  "+
+		"    CASE  "+
+		"        WHEN COUNT(GRANTEE) = '0' THEN 'FALSE' "+
+		"        ELSE 'TRUE' "+
+		"    END AS RESULT "+
+		"FROM GRANTED_PRIVILEGES "+
+		"WHERE GRANTEE = '%s' AND PRIVILEGE = 'TRACE ADMIN' "+
+		"UNION ALL "+
+		"SELECT "+
+		"    'BACKUP_ADMIN' AS ROLE,  "+
+		"    CASE  "+
+		"        WHEN COUNT(GRANTEE) = '0' THEN 'FALSE' "+
+		"        ELSE 'TRUE' "+
+		"    END AS RESULT "+
+		"FROM GRANTED_PRIVILEGES "+
+		"WHERE GRANTEE = '%s' AND PRIVILEGE = 'BACKUP ADMIN' "+
+		"UNION ALL "+
+		"SELECT "+
+		"    'LOG_ADMIN' AS ROLE,  "+
+		"    CASE  "+
+		"        WHEN COUNT(GRANTEE) = '0' THEN 'FALSE' "+
+		"        ELSE 'TRUE' "+
+		"    END AS RESULT "+
+		"FROM GRANTED_PRIVILEGES "+
+		"WHERE GRANTEE = '%s' AND PRIVILEGE = 'LOG ADMIN' "+
+		"UNION ALL "+
+		"SELECT "+
+		"    'AUDIT_OPERATOR' AS ROLE,  "+
+		"    CASE  "+
+		"        WHEN COUNT(GRANTEE) = '0' THEN 'FALSE' "+
+		"        ELSE 'TRUE' "+
+		"    END AS RESULT "+
+		"FROM GRANTED_PRIVILEGES "+
+		"WHERE GRANTEE = '%s' AND PRIVILEGE = 'AUDIT OPERATOR' "+
+		"UNION ALL "+
+		"SELECT "+
+		"    'RESOURCE_ADMIN' AS ROLE,  "+
+		"    CASE  "+
+		"        WHEN COUNT(GRANTEE) = '0' THEN 'FALSE' "+
+		"        ELSE 'TRUE' "+
+		"    END AS RESULT "+
+		"FROM GRANTED_PRIVILEGES "+
+		"WHERE GRANTEE = '%s' AND PRIVILEGE = 'RESOURCE ADMIN' "+
+		"UNION ALL "+
+		"SELECT "+
+		"    'SELECT_STATISTICS_ALERTS_BASE' AS ROLE, "+
+		"    CASE  "+
+		"        WHEN COUNT(GRANTEE) = '0' THEN 'FALSE' "+
+		"        ELSE 'TRUE' "+
+		"    END AS RESULT "+
+		"FROM GRANTED_PRIVILEGES "+
+		"    WHERE GRANTEE = '%s'"+
+		"    AND OBJECT_TYPE = 'TABLE' "+
+		"    AND SCHEMA_NAME = '_SYS_STATISTICS' "+
+		"    AND OBJECT_NAME = 'STATISTICS_ALERTS_BASE' "+
+		"    AND PRIVILEGE = 'SELECT' "+
+		"    UNION ALL "+
+		"SELECT "+
+		"    'DELETE_STATISTICS_ALERTS_BASE' AS ROLE, "+
+		"    CASE  "+
+		"        WHEN COUNT(GRANTEE) = '0' THEN 'FALSE' "+
+		"        ELSE 'TRUE' "+
+		"    END AS RESULT "+
+		"FROM GRANTED_PRIVILEGES "+
+		"    WHERE GRANTEE = '%s'"+
+		"    AND OBJECT_TYPE = 'TABLE' "+
+		"    AND SCHEMA_NAME = '_SYS_STATISTICS' "+
+		"    AND OBJECT_NAME = 'STATISTICS_ALERTS_BASE' "+
+		"    AND PRIVILEGE = 'DELETE'", username, username, username, username, username, username, username, username)
 }
