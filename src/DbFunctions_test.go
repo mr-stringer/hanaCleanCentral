@@ -653,7 +653,6 @@ func TestDbConfig_CheckPrivileges(t *testing.T) {
 		{"DbError", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
 		{"WrongBool", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
 		{"MissingPriv", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
-		{"MissingMonitoring", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
 	}
 	for _, tt := range tests {
 		/*Set up per case mocking*/
