@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 /*In order to ensure that the exact same queries are used in the main code and in testing,
 all of the DB queries are listed here and called from here*/
@@ -103,6 +106,7 @@ func GetCleanDataVolume(host string, port uint) string {
 
 //Function that returns a query that is used to determine if required privileges are in place. Requires a username as input
 func GetPrivCheck(username string) string {
+	username = strings.ToUpper(username)
 	return fmt.Sprintf(""+
 		"	SELECT "+
 		"    'MONITORING' AS ROLE,  "+

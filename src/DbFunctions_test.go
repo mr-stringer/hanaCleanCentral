@@ -613,62 +613,181 @@ func TestDbConfig_CleanDataVolumeFunc(t *testing.T) {
 	}
 }
 
-//		{"GoodClean", args{lc, "ten_db", db1, false}, false},
-//		{"GoodNoCleanNeeded", args{lc, "ten_db", db1, false}, false},
-//		{"DataVolumeQueryFail", args{lc, "ten_db", db1, false}, true},
-//		{"NoDataVolumes", args{lc, "ten_db", db1, false}, false}, //no data volumes doesn't return an error, perhaps it should
-//		{"ScanError", args{lc, "ten_db", db1, false}, true},
-//		{"SingleCleanFailed", args{lc, "ten_db", db1, false}, true},
-//		{"GoodCleanDryRun", args{lc, "ten_db", db1, true}, false},
-//		{"GoodCleanTwoVolumes", args{lc, "ten_db", db1, false}, false},
-//		{"CleanTwoVolumesOneFails", args{lc, "ten_db", db1, true}, false},
-//	}
-//
-//	for _, tt := range tests {
-//		switch {
-//		case tt.name == "GoodClean":
-//			rows1 := sqlmock.NewRows([]string{"HOST", "PORT", "USED_SIZE", "TOTAL_SIZE"}).AddRow("testhana", "30040", "1000000", "3000000")
-//			mock.ExpectQuery(QUERY_GetDataVolume).WillReturnRows(rows1)
-//			mock.ExpectExec(GetCleanDataVolume("testhana", 30040)).WillReturnResult(sqlmock.NewResult(0, 0))
-//		case tt.name == "GoodNoCleanNeeded":
-//			rows1 := sqlmock.NewRows([]string{"HOST", "PORT", "USED_SIZE", "TOTAL_SIZE"}).AddRow("testhana", "30040", "2000000", "3000000")
-//			mock.ExpectQuery(QUERY_GetDataVolume).WillReturnRows(rows1)
-//		case tt.name == "DataVolumeQueryFail":
-//			mock.ExpectQuery(QUERY_GetDataVolume).WillReturnError(fmt.Errorf("some db error"))
-//		case tt.name == "NoDataVolumes":
-//			rows1 := sqlmock.NewRows([]string{"HOST", "PORT", "USED_SIZE", "TOTAL_SIZE"})
-//			mock.ExpectQuery(QUERY_GetDataVolume).WillReturnRows(rows1)
-//		case tt.name == "ScanError":
-//			rows1 := sqlmock.NewRows([]string{"HOST", "PORT", "USED_SIZE", "TOTAL_SIZE"}).AddRow("testhana", "30040.12", "1000000", "3000000")
-//			mock.ExpectQuery(QUERY_GetDataVolume).WillReturnRows(rows1)
-//		case tt.name == "SingleCleanFailed":
-//			rows1 := sqlmock.NewRows([]string{"HOST", "PORT", "USED_SIZE", "TOTAL_SIZE"}).AddRow("testhana", "30040", "1000000", "3000000")
-//			mock.ExpectQuery(QUERY_GetDataVolume).WillReturnRows(rows1)
-//			mock.ExpectExec(GetCleanDataVolume("testhana", 30040)).WillReturnError(fmt.Errorf("some Db error"))
-//		case tt.name == "GoodCleanDryRun":
-//			rows1 := sqlmock.NewRows([]string{"HOST", "PORT", "USED_SIZE", "TOTAL_SIZE"}).AddRow("testhana", "30040", "1000000", "3000000")
-//			mock.ExpectQuery(QUERY_GetDataVolume).WillReturnRows(rows1)
-//		case tt.name == "GoodCleanTwoVolumes":
-//			rows1 := sqlmock.NewRows([]string{"HOST", "PORT", "USED_SIZE", "TOTAL_SIZE"}).AddRow("testhana", "30040", "1000000", "3000000").AddRow("testhana", "30044", "2000000", "6000000")
-//			mock.ExpectQuery(QUERY_GetDataVolume).WillReturnRows(rows1)
-//			mock.ExpectExec(GetCleanDataVolume("testhana", 30040)).WillReturnResult(sqlmock.NewResult(0, 0))
-//			mock.ExpectExec(GetCleanDataVolume("testhana", 30044)).WillReturnResult(sqlmock.NewResult(0, 0))
-//		case tt.name == "CleanTwoVolumesOneFails":
-//			rows1 := sqlmock.NewRows([]string{"HOST", "PORT", "USED_SIZE", "TOTAL_SIZE"}).AddRow("testhana", "30040", "1000000", "3000000").AddRow("testhana", "30044", "2000000", "6000000")
-//			mock.ExpectQuery(QUERY_GetDataVolume).WillReturnRows(rows1)
-//			mock.ExpectExec(GetCleanDataVolume("testhana", 30040)).WillReturnResult(sqlmock.NewResult(0, 0))
-//			mock.ExpectExec(GetCleanDataVolume("testhana", 30044)).WillReturnError(fmt.Errorf("some db error"))
-//		default:
-//			//nothing to do
-//			continue
-//		}
-//		t.Run(tt.name, func(t *testing.T) {
-//			if err := CleanDataVolume(tt.args.lc, tt.args.name, tt.args.hdb, tt.args.dryrun); (err != nil) != tt.wantErr {
-//				t.Errorf("CleanDataVolume() error = %v, wantErr %v", err, tt.wantErr)
-//			}
-//		})
-//	}
-//	quit <- true
-//
-//}
-//
+func TestDbConfig_CheckPrivileges(t *testing.T) {
+	/*Test Setup*/
+	/*Mock DB*/
+	db1, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	if err != nil {
+		t.Errorf("an error '%s' was not expected when opening mock database connection", err)
+	}
+	defer db1.Close()
+
+	/*Logger*/
+	lc := make(chan LogMessage)
+	quit := make(chan bool)
+
+	defer close(lc)
+	defer close(quit)
+
+	go Logger(AppConfig{"file", true, false, false}, lc, quit)
+
+	type args struct {
+		lc chan<- LogMessage
+	}
+	tests := []struct {
+		name    string
+		dbc     *DbConfig
+		args    args
+		wantErr bool
+	}{
+		{"NothingMissing", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, false},
+		{"NoMonitoring", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
+		{"NoTraceAdmin", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
+		{"NoBackupAdmin", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
+		{"NoLogAdmin", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
+		{"NoAuditOperator", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
+		{"NoResourceAdmin", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
+		{"NoSelectAlerts", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
+		{"NoDeleteAlerts", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
+		{"NoRows", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
+		{"DbError", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
+		{"WrongBool", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
+		{"MissingPriv", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
+	}
+	for _, tt := range tests {
+		/*Set up per case mocking*/
+		switch {
+		case tt.name == "NothingMissing":
+			rows1 := mock.NewRows([]string{"ROLE", "RESULT"})
+			rows1.AddRow("MONITORING", "TRUE")
+			rows1.AddRow("TRACE_ADMIN", "TRUE")
+			rows1.AddRow("BACKUP_ADMIN", "TRUE")
+			rows1.AddRow("LOG_ADMIN", "TRUE")
+			rows1.AddRow("AUDIT_OPERATOR", "TRUE")
+			rows1.AddRow("RESOURCE_ADMIN", "TRUE")
+			rows1.AddRow("SELECT_STATISTICS_ALERTS_BASE", "TRUE")
+			rows1.AddRow("DELETE_STATISTICS_ALERTS_BASE", "TRUE")
+			mock.ExpectQuery(GetPrivCheck(tt.dbc.Username)).WillReturnRows(rows1)
+		case tt.name == "NoMonitoring":
+			rows1 := mock.NewRows([]string{"ROLE", "RESULT"})
+			rows1.AddRow("MONITORING", "FALSE")
+			rows1.AddRow("TRACE_ADMIN", "TRUE")
+			rows1.AddRow("BACKUP_ADMIN", "TRUE")
+			rows1.AddRow("LOG_ADMIN", "TRUE")
+			rows1.AddRow("AUDIT_OPERATOR", "TRUE")
+			rows1.AddRow("RESOURCE_ADMIN", "TRUE")
+			rows1.AddRow("SELECT_STATISTICS_ALERTS_BASE", "TRUE")
+			rows1.AddRow("DELETE_STATISTICS_ALERTS_BASE", "TRUE")
+			mock.ExpectQuery(GetPrivCheck(tt.dbc.Username)).WillReturnRows(rows1)
+		case tt.name == "NoTraceAdmin":
+			rows1 := mock.NewRows([]string{"ROLE", "RESULT"})
+			rows1.AddRow("MONITORING", "TRUE")
+			rows1.AddRow("TRACE_ADMIN", "FALSE")
+			rows1.AddRow("BACKUP_ADMIN", "TRUE")
+			rows1.AddRow("LOG_ADMIN", "TRUE")
+			rows1.AddRow("AUDIT_OPERATOR", "TRUE")
+			rows1.AddRow("RESOURCE_ADMIN", "TRUE")
+			rows1.AddRow("SELECT_STATISTICS_ALERTS_BASE", "TRUE")
+			rows1.AddRow("DELETE_STATISTICS_ALERTS_BASE", "TRUE")
+			mock.ExpectQuery(GetPrivCheck(tt.dbc.Username)).WillReturnRows(rows1)
+		case tt.name == "NoBackupAdmin":
+			rows1 := mock.NewRows([]string{"ROLE", "RESULT"})
+			rows1.AddRow("MONITORING", "TRUE")
+			rows1.AddRow("TRACE_ADMIN", "TRUE")
+			rows1.AddRow("BACKUP_ADMIN", "FALSE")
+			rows1.AddRow("LOG_ADMIN", "TRUE")
+			rows1.AddRow("AUDIT_OPERATOR", "TRUE")
+			rows1.AddRow("RESOURCE_ADMIN", "TRUE")
+			rows1.AddRow("SELECT_STATISTICS_ALERTS_BASE", "TRUE")
+			rows1.AddRow("DELETE_STATISTICS_ALERTS_BASE", "TRUE")
+			mock.ExpectQuery(GetPrivCheck(tt.dbc.Username)).WillReturnRows(rows1)
+		case tt.name == "NoLogAdmin":
+			rows1 := mock.NewRows([]string{"ROLE", "RESULT"})
+			rows1.AddRow("MONITORING", "TRUE")
+			rows1.AddRow("TRACE_ADMIN", "TRUE")
+			rows1.AddRow("BACKUP_ADMIN", "TRUE")
+			rows1.AddRow("LOG_ADMIN", "FALSE")
+			rows1.AddRow("AUDIT_OPERATOR", "TRUE")
+			rows1.AddRow("RESOURCE_ADMIN", "TRUE")
+			rows1.AddRow("SELECT_STATISTICS_ALERTS_BASE", "TRUE")
+			rows1.AddRow("DELETE_STATISTICS_ALERTS_BASE", "TRUE")
+			mock.ExpectQuery(GetPrivCheck(tt.dbc.Username)).WillReturnRows(rows1)
+		case tt.name == "NoAuditOperator":
+			rows1 := mock.NewRows([]string{"ROLE", "RESULT"})
+			rows1.AddRow("MONITORING", "TRUE")
+			rows1.AddRow("TRACE_ADMIN", "TRUE")
+			rows1.AddRow("BACKUP_ADMIN", "TRUE")
+			rows1.AddRow("LOG_ADMIN", "TRUE")
+			rows1.AddRow("AUDIT_OPERATOR", "FALSE")
+			rows1.AddRow("RESOURCE_ADMIN", "TRUE")
+			rows1.AddRow("SELECT_STATISTICS_ALERTS_BASE", "TRUE")
+			rows1.AddRow("DELETE_STATISTICS_ALERTS_BASE", "TRUE")
+			mock.ExpectQuery(GetPrivCheck(tt.dbc.Username)).WillReturnRows(rows1)
+		case tt.name == "NoResourceAdmin":
+			rows1 := mock.NewRows([]string{"ROLE", "RESULT"})
+			rows1.AddRow("MONITORING", "TRUE")
+			rows1.AddRow("TRACE_ADMIN", "TRUE")
+			rows1.AddRow("BACKUP_ADMIN", "TRUE")
+			rows1.AddRow("LOG_ADMIN", "TRUE")
+			rows1.AddRow("AUDIT_OPERATOR", "TRUE")
+			rows1.AddRow("RESOURCE_ADMIN", "FALSE")
+			rows1.AddRow("SELECT_STATISTICS_ALERTS_BASE", "TRUE")
+			rows1.AddRow("DELETE_STATISTICS_ALERTS_BASE", "TRUE")
+			mock.ExpectQuery(GetPrivCheck(tt.dbc.Username)).WillReturnRows(rows1)
+		case tt.name == "NoSelectAlerts":
+			rows1 := mock.NewRows([]string{"ROLE", "RESULT"})
+			rows1.AddRow("MONITORING", "TRUE")
+			rows1.AddRow("TRACE_ADMIN", "TRUE")
+			rows1.AddRow("BACKUP_ADMIN", "TRUE")
+			rows1.AddRow("LOG_ADMIN", "TRUE")
+			rows1.AddRow("AUDIT_OPERATOR", "TRUE")
+			rows1.AddRow("RESOURCE_ADMIN", "TRUE")
+			rows1.AddRow("SELECT_STATISTICS_ALERTS_BASE", "FALSE")
+			rows1.AddRow("DELETE_STATISTICS_ALERTS_BASE", "TRUE")
+			mock.ExpectQuery(GetPrivCheck(tt.dbc.Username)).WillReturnRows(rows1)
+		case tt.name == "NoDeleteAlerts":
+			rows1 := mock.NewRows([]string{"ROLE", "RESULT"})
+			rows1.AddRow("MONITORING", "TRUE")
+			rows1.AddRow("TRACE_ADMIN", "TRUE")
+			rows1.AddRow("BACKUP_ADMIN", "TRUE")
+			rows1.AddRow("LOG_ADMIN", "TRUE")
+			rows1.AddRow("AUDIT_OPERATOR", "TRUE")
+			rows1.AddRow("RESOURCE_ADMIN", "TRUE")
+			rows1.AddRow("SELECT_STATISTICS_ALERTS_BASE", "TRUE")
+			rows1.AddRow("DELETE_STATISTICS_ALERTS_BASE", "FALSE")
+			mock.ExpectQuery(GetPrivCheck(tt.dbc.Username)).WillReturnRows(rows1)
+		case tt.name == "NoRows":
+			mock.ExpectQuery(GetPrivCheck(tt.dbc.Username)).WillReturnError(sql.ErrNoRows)
+		case tt.name == "DbError":
+			mock.ExpectQuery(GetPrivCheck(tt.dbc.Username)).WillReturnError(fmt.Errorf("some db error"))
+		case tt.name == "WrongBool":
+			rows1 := mock.NewRows([]string{"ROLE", "RESULT"})
+			rows1.AddRow("MONITORING", "TRUEZ")
+			rows1.AddRow("TRACE_ADMIN", "TRUE")
+			rows1.AddRow("BACKUP_ADMIN", "TRUE")
+			rows1.AddRow("LOG_ADMIN", "TRUE")
+			rows1.AddRow("AUDIT_OPERATOR", "TRUE")
+			rows1.AddRow("RESOURCE_ADMIN", "TRUE")
+			rows1.AddRow("SELECT_STATISTICS_ALERTS_BASE", "TRUE")
+			rows1.AddRow("DELETE_STATISTICS_ALERTS_BASE", "FALSE")
+			mock.ExpectQuery(GetPrivCheck(tt.dbc.Username)).WillReturnRows(rows1)
+		case tt.name == "MissingPriv":
+			rows1 := mock.NewRows([]string{"ROLE", "RESULT"})
+			rows1.AddRow("MONITORING", "TRUE")
+			rows1.AddRow("BACKUP_ADMIN", "TRUE")
+			rows1.AddRow("LOG_ADMIN", "TRUE")
+			rows1.AddRow("AUDIT_OPERATOR", "TRUE")
+			rows1.AddRow("RESOURCE_ADMIN", "TRUE")
+			rows1.AddRow("SELECT_STATISTICS_ALERTS_BASE", "TRUE")
+			rows1.AddRow("DELETE_STATISTICS_ALERTS_BASE", "FALSE")
+			mock.ExpectQuery(GetPrivCheck(tt.dbc.Username)).WillReturnRows(rows1)
+		default:
+			t.Errorf("Couldn't find DB mocking for test \"%s\"\n", tt.name)
+		}
+		t.Run(tt.name, func(t *testing.T) {
+			if err := tt.dbc.CheckPrivileges(tt.args.lc); (err != nil) != tt.wantErr {
+				t.Errorf("DbConfig.CheckPrivileges() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}

@@ -462,7 +462,7 @@ func (dbc *DbConfig) CheckPrivileges(lc chan<- LogMessage) error {
 	/*Query DB to find all privileges that the user has*/
 	lc <- LogMessage{fname, fmt.Sprintf("Attempting Query:%s", GetPrivCheck(dbc.Username)), true}
 	//Remember that the username given will be in uppercase within HANA tables.
-	rows, err := dbc.db.Query(GetPrivCheck(strings.ToUpper(dbc.Username)))
+	rows, err := dbc.db.Query(GetPrivCheck(dbc.Username))
 	switch {
 	case err == sql.ErrNoRows:
 		lc <- LogMessage{fname, "No rows returned by query", false}
@@ -509,10 +509,6 @@ func (dbc *DbConfig) CheckPrivileges(lc chan<- LogMessage) error {
 		if !ok {
 			return fmt.Errorf("expected key %s is missing from the privilege map", v)
 		}
-	}
-	_, ok := privileges["MONITORING"]
-	if !ok {
-		return fmt.Errorf("could not find MONITORING in the privilege map")
 	}
 
 	if !privileges["MONITORING"] {
