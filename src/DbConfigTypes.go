@@ -26,6 +26,7 @@ type DbConfig struct {
 	RetainAuditDays         uint   // Specifies the number of days of audit log to retain
 	CleanDataVolume         bool   // If true, the data volume will be defragemented, currently uses default size of 120
 	db                      *sql.DB
+	Results                 CleanResults //Results stored here and printed later
 }
 
 func (hdb DbConfig) Dsn() string {
@@ -58,4 +59,23 @@ func (db *DbConfig) GetPasswordFromEnv() error {
 		return fmt.Errorf("was not able to source password from %s for the environnement", db.Name)
 	}
 	return nil
+}
+
+type CleanResults struct {
+	TraceFilesRemoved       uint
+	BackupFilesRemoved      uint
+	BackupFilesBytesRemoved uint
+	AlertsRemoved           uint
+	LogSegmentsRemoved      uint
+	LogSegmentsBytesRemoved uint
+	AuditEntriesRemoved     uint
+	DataVolumeBytesRemoved  uint
+	TotalDiskBytesRemoved   uint
+}
+
+func (db *DbConfig) PrintResults() {
+	if db.CleanTrace {
+		fmt.Printf("Trace files cleaned: %.2fMB\n", float64(db.Results.TraceFilesRemoved)/1024/1024)
+	}
+
 }

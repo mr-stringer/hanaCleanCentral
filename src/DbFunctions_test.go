@@ -39,11 +39,11 @@ func TestDbConfig_HanaVersionFunc(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{"Good01", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, "2.00.45.00", false},
-		{"Good02", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, "2.00.43.33", false},
-		{"Good03", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, "3.00.00.10", false},
-		{"Good04", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, "1.00.112.3", false},
-		{"DbError", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, "", true},
+		{"Good01", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc}, "2.00.45.00", false},
+		{"Good02", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc}, "2.00.43.33", false},
+		{"Good03", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc}, "3.00.00.10", false},
+		{"Good04", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc}, "1.00.112.3", false},
+		{"DbError", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc}, "", true},
 	}
 	for _, tt := range tests {
 		/*Set up per case mocking*/
@@ -99,19 +99,19 @@ func TestDbConfig_CleanTraceFilesFunc(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"Good01", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false}, false},
-		{"Good02", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 14, false}, false},
-		{"Good03", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 7, false}, false},
-		{"SetToZero", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 0, false}, false},
-		{"TraceQueryFails", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false}, true},
-		{"TraceQueryUnscannable", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false}, true},
-		{"ClearTraceFails", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false}, false},
-		{"MultiTraceGood", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false}, false},
-		{"MultiTraceCantDeleteFirst", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false}, false},
-		{"NothingToDelete", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false}, false},
-		{"RemovalRowEmpty", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false}, false},
-		{"RemovalRowError", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false}, false},
-		{"DryRun", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, true}, false},
+		{"Good01", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false}, false},
+		{"Good02", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 14, false}, false},
+		{"Good03", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 7, false}, false},
+		{"SetToZero", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 0, false}, false},
+		{"TraceQueryFails", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false}, true},
+		{"TraceQueryUnscannable", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false}, true},
+		{"ClearTraceFails", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false}, false},
+		{"MultiTraceGood", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false}, false},
+		{"MultiTraceCantDeleteFirst", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false}, false},
+		{"NothingToDelete", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false}, false},
+		{"RemovalRowEmpty", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false}, false},
+		{"RemovalRowError", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false}, false},
+		{"DryRun", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, true}, false},
 	}
 	for _, tt := range tests {
 
@@ -214,14 +214,14 @@ func TestDbConfig_CleanBackupFunc(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"GoodClean", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false, false}, false},
-		{"GoodDelete", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, true, false}, false},
-		{"QueryBackupIdFailed", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false, false}, true},
-		{"QueryBackupIdNoRows", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false, false}, false},
-		{"QueryFileDataFailed", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false, false}, true},
-		{"NothingToDelete", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false, false}, false},
-		{"CleanFailed", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false, false}, true},
-		{"DeleteFailed", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, true, false}, true},
+		{"GoodClean", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false, false}, false},
+		{"GoodDelete", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, true, false}, false},
+		{"QueryBackupIdFailed", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false, false}, true},
+		{"QueryBackupIdNoRows", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false, false}, false},
+		{"QueryFileDataFailed", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false, false}, true},
+		{"NothingToDelete", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false, false}, false},
+		{"CleanFailed", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false, false}, true},
+		{"DeleteFailed", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, true, false}, true},
 	}
 	for _, tt := range tests {
 
@@ -314,12 +314,12 @@ func TestDbConfig_CleanAlertFunc(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"Good01", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 14, false}, false},
-		{"DryRun", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 14, true}, false},
-		{"CountAlertsNoRows", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 14, false}, true},
-		{"CountAlertsDbError", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 14, false}, true},
-		{"NothingToDo", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 14, false}, false},
-		{"CleanAlertsDbError", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 14, false}, true},
+		{"Good01", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 14, false}, false},
+		{"DryRun", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 14, true}, false},
+		{"CountAlertsNoRows", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 14, false}, true},
+		{"CountAlertsDbError", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 14, false}, true},
+		{"NothingToDo", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 14, false}, false},
+		{"CleanAlertsDbError", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 14, false}, true},
 	}
 	for _, tt := range tests {
 		/*Set up per case mocking*/
@@ -387,11 +387,11 @@ func TestDbConfig_CleanLogFunc(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"Good01", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, false}, false},
-		{"DryRun", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, true}, false},
-		{"GetSegmentsNoRows", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, false}, true},
-		{"GetSegmentsDbError", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, false}, true},
-		{"ReclaimDbError", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, false}, true},
+		{"Good01", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, false}, false},
+		{"DryRun", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, true}, false},
+		{"GetSegmentsNoRows", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, false}, true},
+		{"GetSegmentsDbError", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, false}, true},
+		{"ReclaimDbError", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, false}, true},
 	}
 	for _, tt := range tests {
 		/*Set up per case mocking*/
@@ -456,16 +456,16 @@ func TestDbConfig_CleanAuditFunc(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"Good", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false}, false},
-		{"DryRun", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, true}, false},
-		{"GoodOneRecordToDelete", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false}, false},
-		{"GoodNothingToDelete", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false}, false},
-		{"CountEventsNoRows", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false}, true},
-		{"CountEventsDbError", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false}, true},
-		{"GetDateNoRows", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false}, true},
-		{"GetDateDbError", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false}, true},
-		{"GetDateWrongFormat", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false}, true},
-		{"TruncateFailed", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, 60, false}, true},
+		{"Good", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false}, false},
+		{"DryRun", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, true}, false},
+		{"GoodOneRecordToDelete", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false}, false},
+		{"GoodNothingToDelete", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false}, false},
+		{"CountEventsNoRows", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false}, true},
+		{"CountEventsDbError", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false}, true},
+		{"GetDateNoRows", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false}, true},
+		{"GetDateDbError", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false}, true},
+		{"GetDateWrongFormat", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false}, true},
+		{"TruncateFailed", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false}, true},
 	}
 	for _, tt := range tests {
 		/*Set up per case mocking*/
@@ -557,23 +557,31 @@ func TestDbConfig_CleanDataVolumeFunc(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"GoodClean", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, false}, false},
-		{"GoodNoCleanNeeded", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, false}, false},
-		{"DataVolumeQueryFail", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, false}, true},
-		{"NoDataVolumes", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, false}, false},
-		{"ScanError", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, false}, true},
-		{"SingleCleanFailed", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, false}, true},
-		{"GoodCleanDryRun", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, true}, false},
-		{"GoodCleanTwoVolumes", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, false}, false},
-		{"CleanTwoVolumesOneFails", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc, false}, true},
+		{"GoodClean", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, false}, false},
+		{"GoodCleanPostCheckFails", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, false}, false},
+		{"GoodNoCleanNeeded", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, false}, false},
+		{"DataVolumeQueryFail", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, false}, true},
+		{"NoDataVolumes", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, false}, false},
+		{"ScanError", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, false}, true},
+		{"SingleCleanFailed", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, false}, true},
+		{"GoodCleanDryRun", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, true}, false},
+		{"GoodCleanTwoVolumes", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, false}, false},
+		{"CleanTwoVolumesOneFails", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, false}, true},
 	}
 	for _, tt := range tests {
 		/*Set up per case mocking*/
 		switch {
 		case tt.name == "GoodClean":
 			rows1 := sqlmock.NewRows([]string{"HOST", "PORT", "USED_SIZE", "TOTAL_SIZE"}).AddRow("testhana", "30040", "1000000", "3000000")
+			rows2 := sqlmock.NewRows([]string{"TOTAL_SIZE"}).AddRow("1500000")
 			mock.ExpectQuery(QUERY_GetDataVolume).WillReturnRows(rows1)
 			mock.ExpectExec(GetCleanDataVolume("testhana", 30040)).WillReturnResult(sqlmock.NewResult(0, 0))
+			mock.ExpectQuery(GetSpecificDataVolume("testhana", 30040)).WillReturnRows(rows2)
+		case tt.name == "GoodCleanPostCheckFails":
+			rows1 := sqlmock.NewRows([]string{"HOST", "PORT", "USED_SIZE", "TOTAL_SIZE"}).AddRow("testhana", "30040", "1000000", "3000000")
+			mock.ExpectQuery(QUERY_GetDataVolume).WillReturnRows(rows1)
+			mock.ExpectExec(GetCleanDataVolume("testhana", 30040)).WillReturnResult(sqlmock.NewResult(0, 0))
+			mock.ExpectQuery(GetSpecificDataVolume("testhana", 30040)).WillReturnError(fmt.Errorf("some db error"))
 		case tt.name == "GoodNoCleanNeeded":
 			rows1 := sqlmock.NewRows([]string{"HOST", "PORT", "USED_SIZE", "TOTAL_SIZE"}).AddRow("testhana", "30040", "2000000", "3000000")
 			mock.ExpectQuery(QUERY_GetDataVolume).WillReturnRows(rows1)
@@ -594,13 +602,20 @@ func TestDbConfig_CleanDataVolumeFunc(t *testing.T) {
 			mock.ExpectQuery(QUERY_GetDataVolume).WillReturnRows(rows1)
 		case tt.name == "GoodCleanTwoVolumes":
 			rows1 := sqlmock.NewRows([]string{"HOST", "PORT", "USED_SIZE", "TOTAL_SIZE"}).AddRow("testhana", "30040", "1000000", "3000000").AddRow("testhana", "30044", "2000000", "6000000")
+			rows2 := sqlmock.NewRows([]string{"TOTAL_SIZE"}).AddRow("2000000")
+			rows3 := sqlmock.NewRows([]string{"TOTAL_SIZE"}).AddRow("3000000")
 			mock.ExpectQuery(QUERY_GetDataVolume).WillReturnRows(rows1)
 			mock.ExpectExec(GetCleanDataVolume("testhana", 30040)).WillReturnResult(sqlmock.NewResult(0, 0))
+			mock.ExpectQuery(GetSpecificDataVolume("testhana", 30040)).WillReturnRows(rows2)
 			mock.ExpectExec(GetCleanDataVolume("testhana", 30044)).WillReturnResult(sqlmock.NewResult(0, 0))
+			mock.ExpectQuery(GetSpecificDataVolume("testhana", 30044)).WillReturnRows(rows3)
+
 		case tt.name == "CleanTwoVolumesOneFails":
 			rows1 := sqlmock.NewRows([]string{"HOST", "PORT", "USED_SIZE", "TOTAL_SIZE"}).AddRow("testhana", "30040", "1000000", "3000000").AddRow("testhana", "30044", "2000000", "6000000")
+			rows2 := sqlmock.NewRows([]string{"TOTAL_SIZE"}).AddRow("2000000")
 			mock.ExpectQuery(QUERY_GetDataVolume).WillReturnRows(rows1)
 			mock.ExpectExec(GetCleanDataVolume("testhana", 30040)).WillReturnResult(sqlmock.NewResult(0, 0))
+			mock.ExpectQuery(GetSpecificDataVolume("testhana", 30040)).WillReturnRows(rows2)
 			mock.ExpectExec(GetCleanDataVolume("testhana", 30044)).WillReturnError(fmt.Errorf("some db error"))
 		default:
 			t.Errorf("Couldn't find DB mocking for test \"%s\"\n", tt.name)
@@ -640,19 +655,19 @@ func TestDbConfig_CheckPrivileges(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"NothingMissing", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, false},
-		{"NoMonitoring", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
-		{"NoTraceAdmin", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
-		{"NoBackupAdmin", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
-		{"NoLogAdmin", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
-		{"NoAuditOperator", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
-		{"NoResourceAdmin", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
-		{"NoSelectAlerts", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
-		{"NoDeleteAlerts", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
-		{"NoRows", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
-		{"DbError", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
-		{"WrongBool", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
-		{"MissingPriv", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1}, args{lc}, true},
+		{"NothingMissing", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc}, false},
+		{"NoMonitoring", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc}, true},
+		{"NoTraceAdmin", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc}, true},
+		{"NoBackupAdmin", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc}, true},
+		{"NoLogAdmin", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc}, true},
+		{"NoAuditOperator", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc}, true},
+		{"NoResourceAdmin", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc}, true},
+		{"NoSelectAlerts", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc}, true},
+		{"NoDeleteAlerts", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc}, true},
+		{"NoRows", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc}, true},
+		{"DbError", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc}, true},
+		{"WrongBool", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc}, true},
+		{"MissingPriv", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc}, true},
 	}
 	for _, tt := range tests {
 		/*Set up per case mocking*/
@@ -787,6 +802,53 @@ func TestDbConfig_CheckPrivileges(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := tt.dbc.CheckPrivileges(tt.args.lc); (err != nil) != tt.wantErr {
 				t.Errorf("DbConfig.CheckPrivileges() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestDbConfig_CheckDataClean(t *testing.T) {
+	/*Test Setup*/
+	/*Mock DB*/
+	db1, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	if err != nil {
+		t.Errorf("an error '%s' was not expected when opening mock database connection", err)
+	}
+	defer db1.Close()
+	type args struct {
+		host string
+		port uint
+	}
+	tests := []struct {
+		name    string
+		dbc     *DbConfig
+		args    args
+		want    uint64
+		wantErr bool
+	}{
+		{"Good01", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{"localhost", 30040}, 30000, false},
+		{"DbError", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{"localhost", 30040}, 0, true},
+		{"NoRows", &DbConfig{"TST", "test-hostname", 30015, "hccadmin", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{"localhost", 30040}, 0, true},
+	}
+	for _, tt := range tests {
+		/*per case mocking*/
+		switch {
+		case tt.name == "Good01":
+			row := mock.NewRows([]string{"TOTAL_BYTES"}).AddRow("30000")
+			mock.ExpectQuery(GetSpecificDataVolume(tt.args.host, tt.args.port)).WillReturnRows(row)
+		case tt.name == "DbError":
+			mock.ExpectQuery(GetSpecificDataVolume(tt.args.host, tt.args.port)).WillReturnError(fmt.Errorf("some db error"))
+		case tt.name == "NoRows":
+			mock.ExpectQuery(GetSpecificDataVolume(tt.args.host, tt.args.port)).WillReturnError(sql.ErrNoRows)
+		}
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.dbc.CheckDataClean(tt.args.host, tt.args.port)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DbConfig.CheckDataClean() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("DbConfig.CheckDataClean() = %v, want %v", got, tt.want)
 			}
 		})
 	}

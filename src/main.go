@@ -166,5 +166,11 @@ func main() {
 		}
 
 	}
+
+	/*Print Results*/
+	for _, dbc := range cnf.Databases {
+		dbc.PrintResults()
+	}
+
 	quit <- true
 }

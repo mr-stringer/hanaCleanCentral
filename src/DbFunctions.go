@@ -120,11 +120,8 @@ func (dbc *DbConfig) CleanTraceFilesFunc(lc chan<- LogMessage, CleanDaysOlder ui
 		}
 	}
 
-	if count > 0 {
-		lc <- LogMessage{fname, fmt.Sprintf("Removed %d old tracefiles saving %.2f MiB", count, float64(saved/1024/1024)), false}
-	} else {
-		lc <- LogMessage{fname, "Nothing was removed", false}
-	}
+	dbc.Results.TraceFilesRemoved += count
+	dbc.Results.TotalDiskBytesRemoved += uint(saved)
 	return nil
 }
 
@@ -185,13 +182,15 @@ func (dbc *DbConfig) CleanBackupFunc(lc chan<- LogMessage, CleanDaysOlder uint, 
 		return nil
 	}
 
+	var removeCount uint
+	var removeBytes uint
 	/*print some info in the log*/
 	for _, v := range bfs {
 		if delete {
-			lc <- LogMessage{fname, fmt.Sprintf("Will remove %d %s files from the catalog, this will free %.2f MiB of space", v.FileCount, v.EntryType, float32(v.Bytes/1024/1024)), false}
+			removeCount++
+			removeBytes += uint(v.Bytes)
 		} else {
-			lc <- LogMessage{fname, fmt.Sprintf("Will remove %d %s files from the catalog", v.FileCount, v.EntryType), false}
-
+			removeCount++
 		}
 	}
 
@@ -214,6 +213,8 @@ func (dbc *DbConfig) CleanBackupFunc(lc chan<- LogMessage, CleanDaysOlder uint, 
 
 		lc <- LogMessage{fname, "Backup catalog successfully cleaned", false}
 	}
+	dbc.Results.BackupFilesRemoved = removeCount
+	dbc.Results.BackupFilesBytesRemoved = removeBytes
 	return nil
 }
 
@@ -256,7 +257,7 @@ func (dbc *DbConfig) CleanAlertFunc(lc chan<- LogMessage, CleanDaysOlder uint, d
 			lc <- LogMessage{fname, err.Error(), true}
 			return err
 		}
-		lc <- LogMessage{fname, fmt.Sprintf("Successfully deleted %d alerts", ac), false}
+		dbc.Results.AlertsRemoved = ac
 	}
 	return nil
 }
@@ -285,7 +286,7 @@ func (dbc *DbConfig) CleanLogFunc(lc chan<- LogMessage, dryrun bool) error {
 		return fmt.Errorf("db error")
 	}
 
-	lc <- LogMessage{fname, fmt.Sprintf("Attempting to clear %d log segments saving %.2f MiB of disk space", count, float32(bytes/1024/1024)), true}
+	//lc <- LogMessage{fname, fmt.Sprintf("Attempting to clear %d log segments saving %.2f MiB of disk space", count, float32(bytes/1024/1024)), true}
 
 	if !dryrun {
 		lc <- LogMessage{fname, fmt.Sprintf("Performing Query:%s", QUERY_ReclaimLog), true}
@@ -295,8 +296,8 @@ func (dbc *DbConfig) CleanLogFunc(lc chan<- LogMessage, dryrun bool) error {
 			lc <- LogMessage{fname, err.Error(), true}
 			return fmt.Errorf("db error")
 		}
-
-		lc <- LogMessage{fname, "Log Volume Cleaning was successful.", false}
+		dbc.Results.LogSegmentsRemoved = count
+		dbc.Results.LogSegmentsBytesRemoved = uint(bytes)
 	}
 	return nil
 }
@@ -367,6 +368,7 @@ func (dbc *DbConfig) CleanAuditFunc(lc chan<- LogMessage, CleanDaysOlder uint, d
 			lc <- LogMessage{fname, err.Error(), true}
 			return fmt.Errorf("db error")
 		}
+		dbc.Results.AuditEntriesRemoved = auditCount
 	}
 
 	return nil
@@ -433,6 +435,16 @@ func (dbc *DbConfig) CleanDataVolumeFunc(lc chan<- LogMessage, dryrun bool) erro
 					failures += 1
 				} else {
 					lc <- LogMessage{fname, "Clean data volume OK", true}
+					/*Collect the space saving */
+					/*This is a 'nice to have' check, if it fails we'll log it but carry on*/
+					sizeNow, err := dbc.CheckDataClean(v.Host, v.Port)
+					if err != nil {
+						lc <- LogMessage{fname, fmt.Sprintf("Post cleaning size check failed for %s:%d, cannot report sizing saving", v.Host, v.Port), true}
+					} else {
+						if sizeNow < v.TotalSizeBytes {
+							dbc.Results.DataVolumeBytesRemoved += uint(v.TotalSizeBytes) - uint(sizeNow)
+						}
+					}
 				}
 			}
 		}
@@ -450,6 +462,19 @@ func (dbc *DbConfig) CleanDataVolumeFunc(lc chan<- LogMessage, dryrun bool) erro
 		lc <- LogMessage{fname, fmt.Sprintf("Clean data volume finished with %d errors", failures), false}
 		return fmt.Errorf("%d data volume clean errors recorded", failures)
 	}
+}
+
+func (dbc *DbConfig) CheckDataClean(host string, port uint) (uint64, error) {
+	var ts uint64
+	err := dbc.db.QueryRow(GetSpecificDataVolume(host, port)).Scan(&ts)
+	switch {
+	case err == sql.ErrNoRows:
+		return ts, fmt.Errorf("no rows returned")
+	case err != nil:
+		return ts, fmt.Errorf("db error")
+	}
+	return ts, nil
+
 }
 
 //CheckPrivileges checks which privleges are supplied to the user.  If the users
