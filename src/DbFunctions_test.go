@@ -102,7 +102,6 @@ func TestDbConfig_CleanTraceFilesFunc(t *testing.T) {
 		{"Good01", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false}, false},
 		{"Good02", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 14, false}, false},
 		{"Good03", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 7, false}, false},
-		{"SetToZero", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 0, false}, false},
 		{"TraceQueryFails", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false}, true},
 		{"TraceQueryUnscannable", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false}, true},
 		{"ClearTraceFails", &DbConfig{"", "", 30015, "", "", true, 60, true, 60, true, true, 60, true, true, 60, true, db1, CleanResults{}}, args{lc, 60, false}, false},

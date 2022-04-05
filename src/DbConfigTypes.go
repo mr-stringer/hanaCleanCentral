@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
 
 //Struct for holding database configuration
@@ -73,9 +76,54 @@ type CleanResults struct {
 	TotalDiskBytesRemoved   uint
 }
 
-func (db *DbConfig) PrintResults() {
-	if db.CleanTrace {
-		fmt.Printf("Trace files cleaned: %.2fMB\n", float64(db.Results.TraceFilesRemoved)/1024/1024)
+func (dbc *DbConfig) PrintResults() {
+
+	/*Could I source this from the env?*/
+	p := message.NewPrinter(language.English)
+
+	fmt.Printf("%s:Cleaning Report\n", dbc.Name)
+
+	/*Backup file report*/
+	if dbc.CleanBackupCatalog {
+		p.Printf("Backup files removed:\t\t%d\n", dbc.Results.BackupFilesRemoved)
+		if dbc.DeleteOldBackups {
+			p.Printf("Backup data removed:\t\t%.2fMiB\n", float64(dbc.Results.BackupFilesBytesRemoved/1024/1024))
+		} else {
+			p.Printf("Backup data removed:\t\tNot Enabled\n")
+		}
+	} else {
+		p.Printf("Backup files removed:\t\tNot Enabled\n")
+		p.Printf("Backup data removed:\t\tNot Enabled\n")
+	}
+
+	/*Alerts report*/
+	if dbc.CleanAlerts {
+		p.Printf("Alert entries removed:\t\t%d\n", dbc.Results.AlertsRemoved)
+	} else {
+		p.Printf("Alert entries removed:\t\tNot Enabled\n")
+	}
+
+	/*Audit report*/
+	if dbc.CleanAudit {
+		p.Printf("Audit entries removed:\t\t%d\n", dbc.Results.AuditEntriesRemoved)
+	} else {
+		p.Printf("Audit entries removed:\t\tNot Enabled\n")
+	}
+
+	/*Log Report*/
+	if dbc.CleanLogVolume {
+		p.Printf("Log Segments removed:\t\t%d\n", dbc.Results.LogSegmentsRemoved)
+		p.Printf("Log Segments reduced by:\t%.2fMiB\n", float64(dbc.Results.LogSegmentsBytesRemoved)/1024/1024)
+	} else {
+		p.Printf("Log Segments removed:\t\tNot Enabled\n")
+		p.Printf("Log Segments reduction:\t\tNot Enabled\n")
+	}
+
+	/*Data Report*/
+	if dbc.CleanDataVolume {
+		p.Printf("Data Volume reduced by:\t\t%.2fMiB\n", float64(dbc.Results.LogSegmentsBytesRemoved)/1024/1024)
+	} else {
+		p.Printf("Data Volume reduction:\t\tNot Enabled\n")
 	}
 
 }
