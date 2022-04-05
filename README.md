@@ -19,7 +19,8 @@ HCC is currently capable of performing the following tasks:
 * Trace file management - removing trace files that are no longer open are or older than the specified number of days.
 * Backup catalog management - removing entries from the backup catalog that are older than the specified number of days.  HCC has the option to physically delete the files referred to in the catalog too.
 * Alerts management - removing alerts from the alerts table older than the specified number of days.
-* Log volume management - removing freed segments from the log volume
+* Log volume management - removing freed segments from the log volume.
+* Data volume management - defragmenting of the data volume. 
 * Audit table management - removing audit entries older than the specified number of days.
 
 ## hanacleaner vs hanaCleanCentral

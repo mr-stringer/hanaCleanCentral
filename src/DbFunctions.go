@@ -10,13 +10,13 @@ import (
 func (dbc *DbConfig) HanaVersionFunc(lc chan<- LogMessage) (string, error) {
 	fname := fmt.Sprintf("%s:%s", dbc.Name, "HanaVersion")
 	var version string
-	lc <- LogMessage{fname, "Starting", true}
+	lc <- LogMessage{fname, "Starting", false}
 	lc <- LogMessage{fname, fmt.Sprintf("Performing query: %s", QUERY_GetVersion), true}
 	r1 := dbc.db.QueryRow(QUERY_GetVersion)
 	err := r1.Scan(&version)
 	if err != nil {
 		lc <- LogMessage{fname, "Query failed", false}
-		lc <- LogMessage{fname, err.Error(), false}
+		lc <- LogMessage{fname, err.Error(), true}
 		return "", err // allow calling function to handle the error
 	}
 	lc <- LogMessage{fname, "OK", true}
@@ -29,16 +29,16 @@ func (dbc *DbConfig) HanaVersionFunc(lc chan<- LogMessage) (string, error) {
 //In some cases it may not be possible to remove a trace file, these incidents are logged but will not cause the function to error.
 func (dbc *DbConfig) CleanTraceFilesFunc(lc chan<- LogMessage, CleanDaysOlder uint, dryrun bool) error {
 	fname := fmt.Sprintf("%s:%s", dbc.Name, "CleanTraceFiles")
-	lc <- LogMessage{fname, "Starting", true}
+	lc <- LogMessage{fname, "Starting", false}
 	if dryrun {
-		lc <- LogMessage{fname, "Dry run enabled, no changes will be made", false}
+		lc <- LogMessage{fname, "Dry run enabled, no changes will be made", true}
 	}
 
 	/*This doesn't look right, you could set it to zero and have all history prior to the last full back removed*/
-	if CleanDaysOlder == 0 {
-		lc <- LogMessage{fname, "CleanDaysOlder is set to zero, nothing to do", false}
-		return nil
-	}
+	//if CleanDaysOlder == 0 {
+	//	lc <- LogMessage{fname, "CleanDaysOlder is set to zero, nothing to do", true}
+	//	return nil
+	//}
 
 	/*slice <- LogMessage{name, "Attempting tracefile truncation", true}
 	ce to hold results*/
@@ -50,7 +50,7 @@ func (dbc *DbConfig) CleanTraceFilesFunc(lc chan<- LogMessage, CleanDaysOlder ui
 
 	rows, err := dbc.db.Query(GetTraceFileQuery(CleanDaysOlder))
 	if err != nil {
-		lc <- LogMessage{fname, "Query Failed", true}
+		lc <- LogMessage{fname, "Query Failed", false}
 		lc <- LogMessage{fname, err.Error(), true}
 		/*allow calling function to deal with error*/
 		return err
@@ -61,7 +61,7 @@ func (dbc *DbConfig) CleanTraceFilesFunc(lc chan<- LogMessage, CleanDaysOlder ui
 		tf := TraceFile{}
 		err := rows.Scan(&tf.Hostname, &tf.TraceFile, &tf.SizeBytes, &tf.LastModified)
 		if err != nil {
-			lc <- LogMessage{fname, "Scan Error", true}
+			lc <- LogMessage{fname, "Scan Error", false}
 			lc <- LogMessage{fname, err.Error(), true}
 			/*allow calling function to deal with the error*/
 			return err
@@ -70,7 +70,7 @@ func (dbc *DbConfig) CleanTraceFilesFunc(lc chan<- LogMessage, CleanDaysOlder ui
 	}
 
 	if len(TraceFiles) == 0 {
-		lc <- LogMessage{fname, "No tracefiles meet criteria for removal", false}
+		lc <- LogMessage{fname, "No tracefiles meet criteria for removal", true}
 		return nil
 	}
 
@@ -84,8 +84,8 @@ func (dbc *DbConfig) CleanTraceFilesFunc(lc chan<- LogMessage, CleanDaysOlder ui
 			lc <- LogMessage{fname, fmt.Sprintf("Performing Query'%s'", GetRemoveTrace(v.Hostname, v.TraceFile)), true}
 			_, err := dbc.db.Exec(GetRemoveTrace(v.Hostname, v.TraceFile))
 			if err != nil {
-				lc <- LogMessage{fname, fmt.Sprintf("The tracefile '%s' on host '%s' could not be removed, it may be open!  This will be retried next time.", v.TraceFile, v.Hostname), true}
-				lc <- LogMessage{fname, err.Error(), true}
+				lc <- LogMessage{fname, fmt.Sprintf("The tracefile '%s' on host '%s' could not be removed, it may be open!  This will be retried next time.", v.TraceFile, v.Hostname), false}
+				lc <- LogMessage{fname, err.Error(), false}
 				continue
 
 			}
@@ -97,14 +97,14 @@ func (dbc *DbConfig) CleanTraceFilesFunc(lc chan<- LogMessage, CleanDaysOlder ui
 			err = dbc.db.QueryRow(GetCheckTracePresent(v.TraceFile)).Scan(&tracePresent)
 			switch {
 			case err == sql.ErrNoRows:
-				lc <- LogMessage{fname, "No rows returned", true}
-				lc <- LogMessage{fname, err.Error(), true}
-				lc <- LogMessage{fname, fmt.Sprintf("Failed to remove tracefile %s", v.TraceFile), false}
+				lc <- LogMessage{fname, "No rows returned", false}
+				lc <- LogMessage{fname, err.Error(), false}
+				lc <- LogMessage{fname, fmt.Sprintf("Failed to remove tracefile %s", v.TraceFile), true}
 				continue /*try the next one perhaps we should check for how many files couldn't be removed*/
 			case err != nil:
-				lc <- LogMessage{fname, "DB failed to query failed", true}
-				lc <- LogMessage{fname, err.Error(), true}
-				lc <- LogMessage{fname, fmt.Sprintf("Failed to remove tracefile %s", v.TraceFile), false}
+				lc <- LogMessage{fname, "DB failed to query failed", false}
+				lc <- LogMessage{fname, err.Error(), false}
+				lc <- LogMessage{fname, fmt.Sprintf("Failed to remove tracefile %s", v.TraceFile), true}
 				continue /*try the next one - don't throw error - perhaps we should check for how many files couldn't be removed*/
 			default:
 				if tracePresent == 0 {
@@ -120,11 +120,8 @@ func (dbc *DbConfig) CleanTraceFilesFunc(lc chan<- LogMessage, CleanDaysOlder ui
 		}
 	}
 
-	if count > 0 {
-		lc <- LogMessage{fname, fmt.Sprintf("Removed %d old tracefiles saving %.2f MiB", count, float64(saved/1024/1024)), false}
-	} else {
-		lc <- LogMessage{fname, "Nothing was removed", false}
-	}
+	dbc.Results.TraceFilesRemoved += count
+	dbc.Results.TotalDiskBytesRemoved += uint(saved)
 	return nil
 }
 
@@ -135,9 +132,9 @@ func (dbc *DbConfig) CleanTraceFilesFunc(lc chan<- LogMessage, CleanDaysOlder ui
 //DeleteOldBackups - bool, if false only the catalog entries will be removed, if true the removed backup catalog entries will be deleted from the file system or BACKINT, use with caution
 func (dbc *DbConfig) CleanBackupFunc(lc chan<- LogMessage, CleanDaysOlder uint, delete bool, dryrun bool) error {
 	fname := fmt.Sprintf("%s:%s", dbc.Name, "CleanBackupCatalog")
-	lc <- LogMessage{fname, "Starting", true}
+	lc <- LogMessage{fname, "Starting", false}
 	if dryrun {
-		lc <- LogMessage{fname, "Dry run enabled, no changes will be made", false}
+		lc <- LogMessage{fname, "Dry run enabled, no changes will be made", true}
 	}
 
 	/*Find the backup ID of the latest full backup that matches the */
@@ -146,7 +143,7 @@ func (dbc *DbConfig) CleanBackupFunc(lc chan<- LogMessage, CleanDaysOlder uint, 
 	err := dbc.db.QueryRow(GetLatestFullBackupID(CleanDaysOlder)).Scan(&backupID)
 	switch {
 	case err == sql.ErrNoRows:
-		lc <- LogMessage{fname, "No backupID found which matches the criteria", false}
+		lc <- LogMessage{fname, "No backupID found which matches the criteria", true}
 		return nil
 	case err != nil:
 		lc <- LogMessage{fname, "An error occurred querying the database", false}
@@ -180,18 +177,20 @@ func (dbc *DbConfig) CleanBackupFunc(lc chan<- LogMessage, CleanDaysOlder uint, 
 	if len(bfs) == 0 {
 		/*Looks like we found a backup, but it is the oldest backup in the catalog so we have nothing to delete*/
 		/*bail out here gracefully*/
-		lc <- LogMessage{fname, fmt.Sprintf("Nothing to delete older than %s", backupID), false}
+		lc <- LogMessage{fname, fmt.Sprintf("Nothing to delete older than %s", backupID), true}
 
 		return nil
 	}
 
+	var removeCount uint
+	var removeBytes uint
 	/*print some info in the log*/
 	for _, v := range bfs {
 		if delete {
-			lc <- LogMessage{fname, fmt.Sprintf("Will remove %d %s files from the catalog, this will free %.2f MiB of space", v.FileCount, v.EntryType, float32(v.Bytes/1024/1024)), false}
+			removeCount++
+			removeBytes += uint(v.Bytes)
 		} else {
-			lc <- LogMessage{fname, fmt.Sprintf("Will remove %d %s files from the catalog", v.FileCount, v.EntryType), false}
-
+			removeCount++
 		}
 	}
 
@@ -212,8 +211,10 @@ func (dbc *DbConfig) CleanBackupFunc(lc chan<- LogMessage, CleanDaysOlder uint, 
 			return fmt.Errorf("couldn't clean backup catalog")
 		}
 
-		lc <- LogMessage{fname, "Backup catalog successfully cleaned", false}
+		lc <- LogMessage{fname, "Backup catalog successfully cleaned", true}
 	}
+	dbc.Results.BackupFilesRemoved = removeCount
+	dbc.Results.BackupFilesBytesRemoved = removeBytes
 	return nil
 }
 
@@ -221,9 +222,9 @@ func (dbc *DbConfig) CleanBackupFunc(lc chan<- LogMessage, CleanDaysOlder uint, 
 //the given number of days in the CleanDaysOlder argument.  No changes are made to the database if the dryrun argument is set to true
 func (dbc *DbConfig) CleanAlertFunc(lc chan<- LogMessage, CleanDaysOlder uint, dryrun bool) error {
 	fname := fmt.Sprintf("%s:%s", dbc.Name, "CleanAlert")
-	lc <- LogMessage{fname, "Starting", true}
+	lc <- LogMessage{fname, "Starting", false}
 	if dryrun {
-		lc <- LogMessage{fname, "Dry run enabled, no changes will be made", false}
+		lc <- LogMessage{fname, "Dry run enabled, no changes will be made", true}
 	}
 	/*Find how many alerts there are that match the deletion criteria*/
 	var ac uint
@@ -244,7 +245,7 @@ func (dbc *DbConfig) CleanAlertFunc(lc chan<- LogMessage, CleanDaysOlder uint, d
 	}
 
 	if ac == 0 {
-		lc <- LogMessage{fname, "No alerts met the criteria for removal", false}
+		lc <- LogMessage{fname, "No alerts met the criteria for removal", true}
 		return nil
 	}
 
@@ -256,7 +257,7 @@ func (dbc *DbConfig) CleanAlertFunc(lc chan<- LogMessage, CleanDaysOlder uint, d
 			lc <- LogMessage{fname, err.Error(), true}
 			return err
 		}
-		lc <- LogMessage{fname, fmt.Sprintf("Successfully deleted %d alerts", ac), false}
+		dbc.Results.AlertsRemoved = ac
 	}
 	return nil
 }
@@ -266,9 +267,9 @@ func (dbc *DbConfig) CleanAlertFunc(lc chan<- LogMessage, CleanDaysOlder uint, d
 //environemt than a non-MDC one.
 func (dbc *DbConfig) CleanLogFunc(lc chan<- LogMessage, dryrun bool) error {
 	fname := fmt.Sprintf("%s:%s", dbc.Name, "CleanLog")
-	lc <- LogMessage{fname, "Starting", true}
+	lc <- LogMessage{fname, "Starting", false}
 	if dryrun {
-		lc <- LogMessage{fname, "Dry run enabled, no changes will be made", false}
+		lc <- LogMessage{fname, "Dry run enabled, no changes will be made", true}
 	}
 	var count uint
 	var bytes uint64
@@ -285,7 +286,7 @@ func (dbc *DbConfig) CleanLogFunc(lc chan<- LogMessage, dryrun bool) error {
 		return fmt.Errorf("db error")
 	}
 
-	lc <- LogMessage{fname, fmt.Sprintf("Attempting to clear %d log segments saving %.2f MiB of disk space", count, float32(bytes/1024/1024)), true}
+	//lc <- LogMessage{fname, fmt.Sprintf("Attempting to clear %d log segments saving %.2f MiB of disk space", count, float32(bytes/1024/1024)), true}
 
 	if !dryrun {
 		lc <- LogMessage{fname, fmt.Sprintf("Performing Query:%s", QUERY_ReclaimLog), true}
@@ -295,8 +296,8 @@ func (dbc *DbConfig) CleanLogFunc(lc chan<- LogMessage, dryrun bool) error {
 			lc <- LogMessage{fname, err.Error(), true}
 			return fmt.Errorf("db error")
 		}
-
-		lc <- LogMessage{fname, "Log Volume Cleaning was successful.", false}
+		dbc.Results.LogSegmentsRemoved = count
+		dbc.Results.LogSegmentsBytesRemoved = uint(bytes)
 	}
 	return nil
 }
@@ -305,9 +306,9 @@ func (dbc *DbConfig) CleanLogFunc(lc chan<- LogMessage, dryrun bool) error {
 func (dbc *DbConfig) CleanAuditFunc(lc chan<- LogMessage, CleanDaysOlder uint, dryrun bool) error {
 
 	fname := fmt.Sprintf("%s:%s", dbc.Name, "CleanAuditLog")
-	lc <- LogMessage{fname, "Starting", true}
+	lc <- LogMessage{fname, "Starting", false}
 	if dryrun {
-		lc <- LogMessage{fname, "Dry run enabled, no changes will be made", false}
+		lc <- LogMessage{fname, "Dry run enabled, no changes will be made", true}
 	}
 
 	//Get the number of items to be removed
@@ -326,7 +327,7 @@ func (dbc *DbConfig) CleanAuditFunc(lc chan<- LogMessage, CleanDaysOlder uint, d
 
 	switch {
 	case auditCount == 0:
-		lc <- LogMessage{fname, "No audit records found that meet deletion criteria", false}
+		lc <- LogMessage{fname, "No audit records found that meet deletion criteria", true}
 		return nil
 	case auditCount == 1:
 		lc <- LogMessage{fname, "1 audit record found that meet deletion criteria", true}
@@ -367,6 +368,7 @@ func (dbc *DbConfig) CleanAuditFunc(lc chan<- LogMessage, CleanDaysOlder uint, d
 			lc <- LogMessage{fname, err.Error(), true}
 			return fmt.Errorf("db error")
 		}
+		dbc.Results.AuditEntriesRemoved = auditCount
 	}
 
 	return nil
@@ -374,9 +376,9 @@ func (dbc *DbConfig) CleanAuditFunc(lc chan<- LogMessage, CleanDaysOlder uint, d
 
 func (dbc *DbConfig) CleanDataVolumeFunc(lc chan<- LogMessage, dryrun bool) error {
 	fname := fmt.Sprintf("%s:%s", dbc.Name, "CleanDataVolume")
-	lc <- LogMessage{fname, "Starting", true}
+	lc <- LogMessage{fname, "Starting", false}
 	if dryrun {
-		lc <- LogMessage{fname, "Dry run enabled, no changes will be made", false}
+		lc <- LogMessage{fname, "Dry run enabled, no changes will be made", true}
 	}
 
 	/*Get the information about each datavolume*/
@@ -433,6 +435,16 @@ func (dbc *DbConfig) CleanDataVolumeFunc(lc chan<- LogMessage, dryrun bool) erro
 					failures += 1
 				} else {
 					lc <- LogMessage{fname, "Clean data volume OK", true}
+					/*Collect the space saving */
+					/*This is a 'nice to have' check, if it fails we'll log it but carry on*/
+					sizeNow, err := dbc.CheckDataClean(v.Host, v.Port)
+					if err != nil {
+						lc <- LogMessage{fname, fmt.Sprintf("Post cleaning size check failed for %s:%d, cannot report sizing saving", v.Host, v.Port), true}
+					} else {
+						if sizeNow < v.TotalSizeBytes {
+							dbc.Results.DataVolumeBytesRemoved += uint(v.TotalSizeBytes) - uint(sizeNow)
+						}
+					}
 				}
 			}
 		}
@@ -441,15 +453,28 @@ func (dbc *DbConfig) CleanDataVolumeFunc(lc chan<- LogMessage, dryrun bool) erro
 	/*choose an exit*/
 	switch {
 	case failures == 0:
-		lc <- LogMessage{fname, "Clean data volume finished with no errors", false}
+		lc <- LogMessage{fname, "Finished with no errors", true}
 		return nil
 	case failures == 1:
 		lc <- LogMessage{fname, "Clean data volume finished with one error", false}
 		return fmt.Errorf("one data volume clean error recorded")
 	default:
-		lc <- LogMessage{fname, fmt.Sprintf("Clean data volume finished with %d errors", failures), false}
+		lc <- LogMessage{fname, fmt.Sprintf("Clean data volume finished with %d errors", failures), true}
 		return fmt.Errorf("%d data volume clean errors recorded", failures)
 	}
+}
+
+func (dbc *DbConfig) CheckDataClean(host string, port uint) (uint64, error) {
+	var ts uint64
+	err := dbc.db.QueryRow(GetSpecificDataVolume(host, port)).Scan(&ts)
+	switch {
+	case err == sql.ErrNoRows:
+		return ts, fmt.Errorf("no rows returned")
+	case err != nil:
+		return ts, fmt.Errorf("db error")
+	}
+	return ts, nil
+
 }
 
 //CheckPrivileges checks which privleges are supplied to the user.  If the users

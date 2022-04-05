@@ -26,6 +26,10 @@ const QUERY_ReclaimLog string = "ALTER SYSTEM RECLAIM LOG"
 //Requires MONITORING role
 const QUERY_GetDataVolume string = "SELECT HOST, PORT, USED_SIZE, TOTAL_SIZE FROM SYS.M_VOLUME_FILES WHERE FILE_TYPE = 'DATA'"
 
+func GetSpecificDataVolume(host string, port uint) string {
+	return fmt.Sprintf("SELECT TOTAL_SIZE FROM SYS.M_VOLUME_FILES WHERE FILE_TYPE = 'DATA' AND HOST = '%s' AND PORT = '%d'", host, port)
+}
+
 //Query to get the privileges that a database user has.
 //func GetPrivilegesQuery(user string) string {
 //	return fmt.Sprintf("SELECT COUNT(GRANTEE) FROM \"SYS\".\"GRANTED_PRIVILEGES\" WHERE GRANTEE = '%s' AND PRIVILEGE = 'BACKUP OPERATOR'", user)
