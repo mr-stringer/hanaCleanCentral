@@ -4,13 +4,13 @@
 
 hanaCleanCentral is a centralised maintenance tool for the HANA database.  Hereafter referred to as HCC.
 
-## Do not use, yet
+## Help me test
 
-This project is in development.  There are no releases at this time.  Once released, binaries will be available, but of course, you are welcome to compile this yourself.
+As I get closer to our first formal release, I am looking for SAP HANA users that would like to help me test HCC on non-production systems.  If you'd like to help test this project you can get in touch by opening an issue or tweeting me [@steve_stringer](https://twitter.com/steve_stringer).  I'll be happy to help you implement it.
 
 ## Introduction
 
-HCC is based on [hanacleaner](https://github.com/chriselswede/hanacleaner).  This project aims to perform a similar range of tasks that hanacleaner performs but centralised.  Rather than being installed on each HANA database, HCC will be installed on a central server and remotely clean many HANA instances.  HCC can be configured to perform maintenance on remote databases in a series or parallel.
+HCC is based on [hanacleaner](https://github.com/chriselswede/hanacleaner).  This project aims to perform a similar range of tasks that hanacleaner performs but centralised.  Rather than being installed on each HANA database, HCC will be installed on a central server and remotely clean many HANA instances.  HCC can be configured to perform maintenance on remote databases.
 
 ## What does HanaCleanCentral do?
 
@@ -20,7 +20,7 @@ HCC is currently capable of performing the following tasks:
 * Backup catalog management - removing entries from the backup catalog that are older than the specified number of days.  HCC has the option to physically delete the files referred to in the catalog too.
 * Alerts management - removing alerts from the alerts table older than the specified number of days.
 * Log volume management - removing freed segments from the log volume.
-* Data volume management - defragmenting of the data volume. 
+* Data volume management - defragmenting of the data volume.
 * Audit table management - removing audit entries older than the specified number of days.
 
 ## hanacleaner vs hanaCleanCentral
@@ -119,7 +119,21 @@ __Important notes about configuration!__
   * Port
   * Username
 * The Password field for each DB must be set either in the file or within the environment see [this section](#Reading-passwords-from-the-environment)
-* Database level parameters that are not set will be inherited from the root level configuration
+* Database level parameters that are not set will be inherited from the root level configuration.
+
+To find the correct SQL ports for each database the following command can be run from the systemdb:
+
+```SQL
+SELECT DATABASE_NAME, SQL_PORT FROM "SYS_DATABASES"."M_SERVICES" WHERE SQL_PORT != 0
+```
+
+The query will return a table similar to this example:
+
+| DATABASE_NAME | SQL_PORT |
+|---------------|----------|
+| SYSTEMDB | 30013 |
+| ECP | 30041 |
+| BWP | 30044 |
 
 An example of a configuration file a single database is provided below.
 
