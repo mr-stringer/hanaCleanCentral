@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-//HanaVersion function returns the version string of the database
+// HanaVersion function returns the version string of the database
 func (dbc *DbConfig) HanaVersionFunc(lc chan<- LogMessage) (string, error) {
 	fname := fmt.Sprintf("%s:%s", dbc.Name, "HanaVersion")
 	var version string
@@ -23,10 +23,10 @@ func (dbc *DbConfig) HanaVersionFunc(lc chan<- LogMessage) (string, error) {
 	return version, nil
 }
 
-//CleanTraceFiles function removes closed trace files that are older than the number of days
-//specified in the 'CleanDaysOlder' argument.  The function will log all activity.  The function will also return
-//an error.  If no errors are found nil is returned.
-//In some cases it may not be possible to remove a trace file, these incidents are logged but will not cause the function to error.
+// CleanTraceFiles function removes closed trace files that are older than the number of days
+// specified in the 'CleanDaysOlder' argument.  The function will log all activity.  The function will also return
+// an error.  If no errors are found nil is returned.
+// In some cases it may not be possible to remove a trace file, these incidents are logged but will not cause the function to error.
 func (dbc *DbConfig) CleanTraceFilesFunc(lc chan<- LogMessage, CleanDaysOlder uint, dryrun bool) error {
 	fname := fmt.Sprintf("%s:%s", dbc.Name, "CleanTraceFiles")
 	lc <- LogMessage{fname, "Starting", false}
@@ -125,11 +125,11 @@ func (dbc *DbConfig) CleanTraceFilesFunc(lc chan<- LogMessage, CleanDaysOlder ui
 	return nil
 }
 
-//This function truncates the backup catalog of the HANA database with the option of also deleting the underlying database backup files.
-//The options in the configuration file that control this are:
-//TruncateBackupCatalog - bool.  If true, the function will be triggered.
-//BackupCatalogRetentionDays - uint, used to decide which backup catalog entries to retain
-//DeleteOldBackups - bool, if false only the catalog entries will be removed, if true the removed backup catalog entries will be deleted from the file system or BACKINT, use with caution
+// This function truncates the backup catalog of the HANA database with the option of also deleting the underlying database backup files.
+// The options in the configuration file that control this are:
+// TruncateBackupCatalog - bool.  If true, the function will be triggered.
+// BackupCatalogRetentionDays - uint, used to decide which backup catalog entries to retain
+// DeleteOldBackups - bool, if false only the catalog entries will be removed, if true the removed backup catalog entries will be deleted from the file system or BACKINT, use with caution
 func (dbc *DbConfig) CleanBackupFunc(lc chan<- LogMessage, CleanDaysOlder uint, delete bool, dryrun bool) error {
 	fname := fmt.Sprintf("%s:%s", dbc.Name, "CleanBackupCatalog")
 	lc <- LogMessage{fname, "Starting", false}
@@ -218,8 +218,8 @@ func (dbc *DbConfig) CleanBackupFunc(lc chan<- LogMessage, CleanDaysOlder uint, 
 	return nil
 }
 
-//This function deletes alerts from the table _SYS_STATISTICS.STATISTICS_ALERTS_BASE.  Alerts are deleted if they are older than
-//the given number of days in the CleanDaysOlder argument.  No changes are made to the database if the dryrun argument is set to true
+// This function deletes alerts from the table _SYS_STATISTICS.STATISTICS_ALERTS_BASE.  Alerts are deleted if they are older than
+// the given number of days in the CleanDaysOlder argument.  No changes are made to the database if the dryrun argument is set to true
 func (dbc *DbConfig) CleanAlertFunc(lc chan<- LogMessage, CleanDaysOlder uint, dryrun bool) error {
 	fname := fmt.Sprintf("%s:%s", dbc.Name, "CleanAlert")
 	lc <- LogMessage{fname, "Starting", false}
@@ -262,9 +262,9 @@ func (dbc *DbConfig) CleanAlertFunc(lc chan<- LogMessage, CleanDaysOlder uint, d
 	return nil
 }
 
-//This function deletes free logsegments from the log volume.  Performing this task will reduce the disk space used in the log volume
-//but may also cause a minor IO penalty when new new log segments need to be created.  It is more important to run this function is an MDC
-//environemt than a non-MDC one.
+// This function deletes free logsegments from the log volume.  Performing this task will reduce the disk space used in the log volume
+// but may also cause a minor IO penalty when new new log segments need to be created.  It is more important to run this function is an MDC
+// environemt than a non-MDC one.
 func (dbc *DbConfig) CleanLogFunc(lc chan<- LogMessage, dryrun bool) error {
 	fname := fmt.Sprintf("%s:%s", dbc.Name, "CleanLog")
 	lc <- LogMessage{fname, "Starting", false}
@@ -302,7 +302,7 @@ func (dbc *DbConfig) CleanLogFunc(lc chan<- LogMessage, dryrun bool) error {
 	return nil
 }
 
-//Function that removes old audit events from the audit table.
+// Function that removes old audit events from the audit table.
 func (dbc *DbConfig) CleanAuditFunc(lc chan<- LogMessage, CleanDaysOlder uint, dryrun bool) error {
 
 	fname := fmt.Sprintf("%s:%s", dbc.Name, "CleanAuditLog")
@@ -477,9 +477,9 @@ func (dbc *DbConfig) CheckDataClean(host string, port uint) (uint64, error) {
 
 }
 
-//CheckPrivileges checks which privleges are supplied to the user.  If the users
-//doesn't have sufficient privleges to run the functions that are enabled
-//then none will be attempted
+// CheckPrivileges checks which privleges are supplied to the user.  If the users
+// doesn't have sufficient privleges to run the functions that are enabled
+// then none will be attempted
 func (dbc *DbConfig) CheckPrivileges(lc chan<- LogMessage) error {
 	fname := fmt.Sprintf("%s:%s", dbc.Name, "CheckPrivileges")
 	lc <- LogMessage{fname, "Starting", true}
@@ -491,7 +491,7 @@ func (dbc *DbConfig) CheckPrivileges(lc chan<- LogMessage) error {
 	switch {
 	case err == sql.ErrNoRows:
 		lc <- LogMessage{fname, "No rows returned by query", false}
-		return fmt.Errorf("no privileges found for user:%s\n", dbc.Username)
+		return fmt.Errorf("no privileges found for user: %s", dbc.Username)
 	case err != nil:
 		lc <- LogMessage{fname, "Database returned an error!", false}
 		return fmt.Errorf("DB error")
