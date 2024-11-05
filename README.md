@@ -2,8 +2,6 @@
 
 This project is now archived. For HANA management, checkout my module [hanautil](https://github.com/mr-stringer/hanautil).
 
-[![Go](https://github.com/mr-stringer/hanaCleanCentral/actions/workflows/go.yml/badge.svg)](https://github.com/mr-stringer/hanaCleanCentral/actions/workflows/go.yml)
-
 hanaCleanCentral is a centralised maintenance tool for the HANA database.  Hereafter referred to as HCC.
 
 ## Help me test
